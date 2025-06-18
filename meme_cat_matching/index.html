@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat Meme Matching!</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Start Screen -->
+    <div id="startScreen" class="screen">
+        <div class="rainbow-background"></div>
+        <div class="cat-collage">
+            <img src="images/banana_cat.png" alt="Banana Cat" class="collage-cat cat-1">
+            <img src="images/chad_cat.png" alt="Chad Cat" class="collage-cat cat-2">
+            <img src="images/coughing_cat.png" alt="Coughing Cat" class="collage-cat cat-3">
+            <img src="images/cursed_cat.png" alt="Cursed Cat" class="collage-cat cat-4">
+            <img src="images/grumpy_cat.png" alt="Grumpy Cat" class="collage-cat cat-5">
+            <img src="images/maxwell_cat.png" alt="Maxwell Cat" class="collage-cat cat-6">
+            <img src="images/popping_cat_closed.png" alt="Popping Cat Closed" class="collage-cat cat-7">
+            <img src="images/popping_cat_open.png" alt="Popping Cat Open" class="collage-cat cat-8">
+            <img src="images/sneeze_cat.png" alt="Sneeze Cat" class="collage-cat cat-9">
+            <img src="images/vader_cat.png" alt="Vader Cat" class="collage-cat cat-10">
+            <img src="images/weird_cat.png" alt="Weird Cat" class="collage-cat cat-11">
+        </div>
+        <div class="start-content">
+            <h1>🐱 Cat Meme Matching! 🐱</h1>
+            <p>Flip cards to find matching cat memes!</p>
+            <div class="menu-buttons">
+                <button class="pink-button" onclick="startSoloGame()">🤖 Solo vs Computer</button>
+                <button class="pink-button" onclick="startLocalGame()">👫 Local Multiplayer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Difficulty Selection Screen -->
+    <div id="difficultyScreen" class="screen hidden">
+        <div class="rainbow-background"></div>
+        <div class="start-content">
+            <h2>🎯 Select Difficulty</h2>
+            <div class="menu-buttons">
+                <button class="pink-button" onclick="startGame('solo', 'easy')">😸 Easy</button>
+                <button class="pink-button" onclick="startGame('solo', 'normal')">😼 Normal</button>
+                <button class="pink-button" onclick="startGame('solo', 'hard')">😾 Hard</button>
+                <button class="pink-button" onclick="showStartScreen()">🔙 Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="screen hidden">
+        <div class="game-header">
+            <h1>🐱 Cat Meme Matching! 🐱</h1>
+            <div class="game-info">
+                <div class="score-board">
+                    <div class="player-score player1">
+                        <span class="player-name">Player 1: </span>
+                        <span class="score">0</span>
+                    </div>
+                    <div class="player-score player2 hidden">
+                        <span class="player-name">Player 2: </span>
+                        <span class="score">0</span>
+                    </div>
+                    <div class="computer-score hidden">
+                        <span class="player-name">Computer: </span>
+                        <span class="score">0</span>
+                    </div>
+                </div>
+                <div class="current-turn">
+                    <span id="turnIndicator">Your Turn!</span>
+                </div>
+                <button class="pink-button small" onclick="resetGame()">🔄 New Game</button>
+                <button class="pink-button small" onclick="showStartScreen()">🏠 Home</button>
+            </div>
+        </div>
+
+        <div class="game-board" id="gameBoard">
+            <!-- Cards will be generated here -->
+        </div>
+
+        <div id="gameOverModal" class="modal hidden">
+            <div class="modal-content">
+                <h2 id="gameOverTitle">🎉 Game Over!</h2>
+                <p id="gameOverMessage"></p>
+                <div class="modal-buttons">
+                    <button class="pink-button" onclick="resetGame()">🔄 Play Again</button>
+                    <button class="pink-button" onclick="showStartScreen()">🏠 Home</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
