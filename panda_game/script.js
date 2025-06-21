@@ -343,6 +343,13 @@ function showScreen(screenName) {
     });
     elements.screens[screenName].classList.add('active');
     gameState.currentScreen = screenName;
+
+    // Update high score display when showing start screen
+    if (screenName === 'start') {
+        // Reload high score from localStorage in case it was updated
+        gameState.highScore = parseInt(localStorage.getItem('pandaPlaytimeHighScore')) || 0;
+        elements.display.highScore.textContent = gameState.highScore;
+    }
 }
 
 // Game Functions
