@@ -4,6 +4,32 @@ Welcome to the Mini Games Collection! This repository contains a growing collect
 
 ## 🎯 Games
 
+### 🐼 Panda Playtime
+
+A charming panda care simulation game! Keep adorable pandas happy by feeding them bamboo and playing with them before they get sad and leave.
+
+**Features:**
+- 🐼 **10 Unique Pandas**: Care for pandas with names like Pepa, Fudge, Mr. Coco, and Lil Lilly
+- 🎯 **Time Management**: React quickly to pandas' needs before they get sad, then angry, then leave!
+- 🎵 **Background Music**: Relaxing soundtrack to enhance the gameplay experience
+- 📈 **Progressive Difficulty**: Game gets more challenging as pandas need attention more frequently
+- ⌨️ **Keyboard Controls**: Use spacebar to toggle modes, or number keys (1 for feed, 2 for play)
+- 💾 **High Score System**: Track your best performance with persistent high scores
+- ⏸️ **Pause Feature**: Take breaks without losing progress
+
+**How to Play:**
+1. Navigate to the `panda_game` folder and open `index.html` in your browser
+2. Click pandas when they show hunger (🍃) or play (🎾) icons in thought bubbles
+3. Switch between Feed Mode and Play Mode using the buttons or keyboard shortcuts
+4. Keep pandas happy with timely responses - they get sad → angry → leave if ignored
+5. Manage your bamboo supply which regenerates over time
+6. Survive as long as possible before losing 3 pandas!
+
+**Pandas to Care For:**
+- 🐼 Pepa, Fudge, Mr. Coco, Lil Lilly
+- 🐼 Lil Willy, Joey, Jake, Sky
+- 🐼 Momma and Baby Bobby, Mr. Muchalot
+
 ### 🐱 Cat Meme Matching
 
 A delightful memory card game featuring popular cat memes! Flip cards to find matching pairs of adorable cat memes.
@@ -16,12 +42,11 @@ A delightful memory card game featuring popular cat memes! Flip cards to find ma
 - 🎵 **Audio Feedback**: Sound effects for card flips and matches
 
 **How to Play:**
-1. Navigate to the `meme_cat_matching` folder
-2. Run `./start_game.sh` or open `index.html` in your browser
-3. Choose between Solo vs Computer or Local Multiplayer
-4. If playing solo, select your difficulty level
-5. Click cards to flip them and find matching pairs
-6. The player with the most matches wins!
+1. Navigate to the `meme_cat_matching` folder and open `index.html` in your browser
+2. Choose between Solo vs Computer or Local Multiplayer
+3. If playing solo, select your difficulty level
+4. Click cards to flip them and find matching pairs
+5. The player with the most matches wins!
 
 **Cat Memes Included:**
 - 🍌 Banana Cat
@@ -44,8 +69,6 @@ Each game is self-contained in its own directory with all necessary files:
 3. Open the `index.html` file in your web browser
 4. Start playing!
 
-Some games may include a `start_game.sh` script for easy launching.
-
 ## 🛠️ Technologies
 
 - **HTML5** - Game structure and layout
@@ -61,8 +84,17 @@ mini_games/
 │   ├── images/                 # Cat meme images
 │   ├── index.html             # Game HTML
 │   ├── script.js              # Game logic
+│   └── styles.css             # Game styling
+├── panda_game/                 # Panda care simulation game
+│   ├── images/                 # Panda sprites and icons
+│   │   ├── pandas/            # Individual panda characters
+│   │   ├── panda_feelings_icons/ # Emotion indicators
+│   │   ├── panda_needs_icons/ # Need indicators (hungry/play)
+│   │   └── player_action_icons/ # UI action buttons
+│   ├── index.html             # Game HTML
+│   ├── script.js              # Game logic
 │   ├── styles.css             # Game styling
-│   └── start_game.sh          # Launch script
+│   └── panda_playtime.mp3     # Background music
 └── README.md                  # This file
 ```
 
