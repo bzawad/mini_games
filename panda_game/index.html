@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panda Playtime!</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Start Screen -->
+    <div id="startScreen" class="screen active">
+        <div class="panda-collage">
+            <img src="images/pandas/pepa.png" alt="Pepa" class="collage-panda">
+            <img src="images/pandas/fudge.png" alt="Fudge" class="collage-panda">
+            <img src="images/pandas/mr_coco.png" alt="Mr Coco" class="collage-panda">
+            <img src="images/pandas/lil_lilly.png" alt="Lil Lilly" class="collage-panda">
+            <img src="images/pandas/joey.png" alt="Joey" class="collage-panda">
+            <img src="images/pandas/jake.jpg" alt="Jake" class="collage-panda">
+        </div>
+        <h1 class="game-title">Panda Playtime!</h1>
+        <div class="start-buttons">
+            <button id="startGameBtn" class="game-button">Start Game</button>
+            <button id="instructionsBtn" class="game-button">Instructions</button>
+        </div>
+        <div class="high-score">High Score: <span id="displayHighScore">0</span></div>
+    </div>
+
+    <!-- Instructions Screen -->
+    <div id="instructionsScreen" class="screen">
+        <div class="instructions-content">
+            <h2>How to Play</h2>
+            <ul>
+                <li>Feed hungry pandas by clicking on them when they show the hungry icon</li>
+                <li>Play with bored pandas by clicking on them when they show the play icon</li>
+                <li>You have limited bamboo that regenerates over time</li>
+                <li>Keep pandas happy or they'll get sad, then angry, then leave!</li>
+                <li>Game ends when 3 pandas leave</li>
+                <li>Score 1 point for each feed and play action</li>
+            </ul>
+            <button id="backToStartBtn" class="game-button">Back to Start</button>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="screen">
+        <div class="game-header">
+            <div class="game-stats">
+                <div class="stat">
+                    <img src="images/player_action_icons/feed_panda_icon.png" alt="Bamboo" class="stat-icon">
+                    <span id="bambooCount">10</span>
+                </div>
+                <div class="stat">Score: <span id="currentScore">0</span></div>
+                <div class="stat">Pandas Lost: <span id="pandasLost">0</span>/3</div>
+                <div class="stat">Time: <span id="gameTime">0</span>s</div>
+                <div class="stat">Level: <span id="difficultyLevel">1</span></div>
+            </div>
+            <button id="pauseBtn" class="game-button small">Pause</button>
+        </div>
+
+        <div id="pandaGrid" class="panda-grid">
+            <!-- Panda slots will be dynamically generated -->
+        </div>
+
+        <div class="action-buttons">
+            <button id="feedModeBtn" class="action-button active" data-mode="feed">
+                <img src="images/player_action_icons/feed_panda_icon.png" alt="Feed">
+                Feed Mode
+                <div class="hotkey-hint">Press 1</div>
+            </button>
+            <button id="playModeBtn" class="action-button" data-mode="play">
+                <img src="images/player_action_icons/play_with_panda_icon.png" alt="Play">
+                Play Mode
+                <div class="hotkey-hint">Press 2</div>
+            </button>
+        </div>
+
+        <div class="toggle-hint">
+            Press SPACEBAR to toggle modes
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="screen">
+        <div class="game-over-content">
+            <h2>Game Over!</h2>
+            <div class="final-stats">
+                <div class="stat-large">Final Score: <span id="finalScore">0</span></div>
+                <div class="stat-large">Time Survived: <span id="finalTime">0</span>s</div>
+                <div id="newHighScore" class="new-high-score hidden">NEW HIGH SCORE!</div>
+            </div>
+            <div class="game-over-buttons">
+                <button id="playAgainBtn" class="game-button">Play Again</button>
+                <button id="backToMenuBtn" class="game-button">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pause Screen -->
+    <div id="pauseScreen" class="screen overlay">
+        <div class="pause-content">
+            <h2>Game Paused</h2>
+            <div class="pause-buttons">
+                <button id="resumeBtn" class="game-button">Resume</button>
+                <button id="quitToMenuBtn" class="game-button">Quit to Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Background Music -->
+    <audio id="backgroundMusic" preload="auto" loop>
+        <source src="panda_playtime.mp3" type="audio/mpeg">
+    </audio>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
