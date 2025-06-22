@@ -134,11 +134,29 @@ class Player extends GameObject {
             return; // Flashing effect when invulnerable
         }
 
-        if (this.image.complete) {
+        if (this.image.complete && this.image.naturalWidth > 0) {
             ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
         } else {
+            // Fallback player graphics
             ctx.fillStyle = '#0066CC';
             ctx.fillRect(this.x, this.y, this.width, this.height);
+
+            // Add details to make it look like a character with a gun
+            ctx.fillStyle = '#004499';
+            ctx.fillRect(this.x + 5, this.y + 5, this.width - 10, this.height - 10);
+
+            // Gun
+            ctx.fillStyle = '#555555';
+            ctx.fillRect(this.x + this.width, this.y + this.height / 2 - 2, 15, 4);
+
+            // Face
+            ctx.fillStyle = '#FFE4B5';
+            ctx.fillRect(this.x + 10, this.y + 10, 20, 20);
+
+            // Eyes
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(this.x + 15, this.y + 15, 3, 3);
+            ctx.fillRect(this.x + 22, this.y + 15, 3, 3);
         }
     }
 }
@@ -185,11 +203,25 @@ class Monster extends GameObject {
     }
 
     draw(ctx) {
-        if (this.image.complete) {
+        if (this.image.complete && this.image.naturalWidth > 0) {
             ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
         } else {
+            // Fallback monster graphics
             ctx.fillStyle = '#8B4513';
             ctx.fillRect(this.x, this.y, this.width, this.height);
+
+            // Add monster details
+            ctx.fillStyle = '#654321';
+            ctx.fillRect(this.x + 5, this.y + 5, this.width - 10, this.height - 10);
+
+            // Eyes
+            ctx.fillStyle = '#FF0000';
+            ctx.fillRect(this.x + 8, this.y + 8, 4, 4);
+            ctx.fillRect(this.x + this.width - 12, this.y + 8, 4, 4);
+
+            // Mouth
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(this.x + 10, this.y + 20, this.width - 20, 3);
         }
     }
 }
@@ -216,7 +248,26 @@ class Boss extends Monster {
     }
 
     draw(ctx) {
-        super.draw(ctx);
+        if (this.image.complete && this.image.naturalWidth > 0) {
+            ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+        } else {
+            // Fallback boss graphics
+            ctx.fillStyle = '#8B0000';
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+
+            // Boss details
+            ctx.fillStyle = '#654321';
+            ctx.fillRect(this.x + 8, this.y + 8, this.width - 16, this.height - 16);
+
+            // Eyes
+            ctx.fillStyle = '#FF0000';
+            ctx.fillRect(this.x + 15, this.y + 15, 8, 8);
+            ctx.fillRect(this.x + this.width - 23, this.y + 15, 8, 8);
+
+            // Crown or special marking
+            ctx.fillStyle = '#FFD700';
+            ctx.fillRect(this.x + 10, this.y - 5, this.width - 20, 10);
+        }
 
         // Health bar
         const barWidth = 100;
@@ -392,6 +443,7 @@ class Game extends GameState {
             '#98FB98'  // Pale green
         ];
 
+        console.log('Game constructor called');
         this.setupEventListeners();
         this.showScreen('titleScreen');
     }
@@ -441,12 +493,14 @@ class Game extends GameState {
         this.level = 1;
         this.gameRunning = true;
 
+        console.log('Starting game...');
         this.initLevel();
         this.showScreen('gameScreen');
         this.gameLoop();
     }
 
     initLevel() {
+        console.log('Initializing level', this.level);
         this.player = new Player(100, 400);
         this.monsters = [];
         this.bosses = [];
@@ -473,6 +527,9 @@ class Game extends GameState {
             );
             this.monsters.push(monster);
         }
+
+        console.log('Player created at:', this.player.x, this.player.y);
+        console.log('Monsters created:', this.monsters.length);
 
         this.updateUI();
     }
@@ -654,5 +711,12 @@ class Game extends GameState {
 // Initialize game
 let gameInstance;
 window.onload = () => {
+    console.log('Window loaded, creating game...');
     gameInstance = new Game();
+
+    // Auto-start the game for testing
+    setTimeout(() => {
+        console.log('Auto-starting game for testing...');
+        gameInstance.startGame();
+    }, 1000);
 }; 
