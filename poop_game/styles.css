@@ -155,8 +155,11 @@ body {
 /* Game Screen */
 #gameScreen {
     background: none;
-    display: flex;
     flex-direction: column;
+}
+
+#gameScreen.active {
+    display: flex;
 }
 
 #gameUI {

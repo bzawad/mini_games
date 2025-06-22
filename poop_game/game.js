@@ -601,6 +601,10 @@ class Game extends GameState {
 
         console.log('Game constructor called');
         this.setupEventListeners();
+
+        // Ensure we start on title screen
+        this.gameRunning = false;
+        this.currentScreen = 'titleScreen';
         this.showScreen('titleScreen');
     }
 
@@ -636,11 +640,47 @@ class Game extends GameState {
     }
 
     showScreen(screenId) {
+        console.log('Showing screen:', screenId);
+
+        // Remove active class from all screens
         document.querySelectorAll('.screen').forEach(screen => {
             screen.classList.remove('active');
+            console.log('Removed active from:', screen.id);
         });
-        document.getElementById(screenId).classList.add('active');
+
+        // Add active class to target screen
+        const targetScreen = document.getElementById(screenId);
+        if (targetScreen) {
+            targetScreen.classList.add('active');
+            console.log('Added active to:', screenId);
+        } else {
+            console.error('Screen not found:', screenId);
+        }
+
         this.currentScreen = screenId;
+
+        // Manage game loop based on screen
+        if (screenId === 'gameScreen') {
+            // Starting/resuming game - make sure game loop runs
+            if (!this.gameRunning && (this.player || this.bosses.length > 0)) {
+                console.log('Resuming game loop for screen transition to gameScreen');
+                this.gameRunning = true;
+                this.gameLoop();
+            }
+        } else {
+            // Not on game screen - stop game loop
+            this.gameRunning = false;
+        }
+
+        // Force hide canvas when not on game screen
+        const canvas = document.getElementById('gameCanvas');
+        if (canvas) {
+            if (screenId === 'gameScreen') {
+                canvas.style.display = 'block';
+            } else {
+                canvas.style.display = 'none';
+            }
+        }
     }
 
     startGame() {
@@ -697,7 +737,10 @@ class Game extends GameState {
     }
 
     gameLoop() {
-        if (!this.gameRunning) return;
+        if (!this.gameRunning) {
+            console.log('Game loop stopped - gameRunning is false');
+            return;
+        }
 
         this.update();
         this.draw();
@@ -706,7 +749,7 @@ class Game extends GameState {
     }
 
     update() {
-        if (this.currentScreen !== 'gameScreen') return;
+        if (this.currentScreen !== 'gameScreen' || !this.gameRunning) return;
 
         // Update player
         if (this.player) {
@@ -786,12 +829,13 @@ class Game extends GameState {
 
         // Check level completion
         if (this.monsters.length === 0 && this.bosses.length === 0 && !this.currentBoss) {
+            console.log('Level complete! Monsters:', this.monsters.length, 'Bosses:', this.bosses.length, 'Current boss:', this.currentBoss);
             this.levelComplete();
         }
     }
 
     draw() {
-        if (this.currentScreen !== 'gameScreen') return;
+        if (this.currentScreen !== 'gameScreen' || !this.gameRunning) return;
 
         // Clear canvas with level-appropriate background
         const bgColor = this.levelColors[(this.level - 1) % this.levelColors.length];
@@ -802,13 +846,32 @@ class Game extends GameState {
         this.ctx.fillStyle = '#8B4513';
         this.ctx.fillRect(0, 500, this.canvas.width, 100);
 
+        // Debug: Draw a test rectangle to verify canvas is working
+        this.ctx.fillStyle = 'red';
+        this.ctx.fillRect(10, 10, 50, 20);
+        this.ctx.fillStyle = 'white';
+        this.ctx.font = '12px Arial';
+        this.ctx.fillText('CANVAS OK', 15, 25);
+
         // Draw game objects
         if (this.player) {
+            console.log('Drawing player at:', this.player.x, this.player.y);
             this.player.draw(this.ctx);
+        } else {
+            console.log('No player to draw');
         }
 
-        this.monsters.forEach(monster => monster.draw(this.ctx));
-        this.bosses.forEach(boss => boss.draw(this.ctx));
+        console.log('Drawing monsters:', this.monsters.length);
+        this.monsters.forEach((monster, index) => {
+            console.log(`Monster ${index} at:`, monster.x, monster.y);
+            monster.draw(this.ctx);
+        });
+
+        console.log('Drawing bosses:', this.bosses.length);
+        this.bosses.forEach((boss, index) => {
+            console.log(`Boss ${index} at:`, boss.x, boss.y, 'Health:', boss.health);
+            boss.draw(this.ctx);
+        });
         this.lasers.forEach(laser => laser.draw(this.ctx));
         this.projectiles.forEach(projectile => projectile.draw(this.ctx));
     }
@@ -826,22 +889,34 @@ class Game extends GameState {
     showBossDialogue() {
         let bossImage, dialogueText;
 
+        console.log('Showing boss dialogue for level:', this.level);
+
         switch (this.level) {
             case 2:
                 bossImage = 'images/monster_sprites/poo_fairy_boss.png';
                 dialogueText = "I am the Poo Fairy Boss! I will rain down poop emojis upon you!";
                 this.currentBoss = new PooFairyBoss(600, 300);
+                console.log('Created Poo Fairy Boss:', this.currentBoss);
                 break;
             case 3:
                 bossImage = 'images/monster_sprites/poop_t-shirt_boss.png';
                 dialogueText = "Prepare for my t-shirt cannon! You cannot escape my fashionable fury!";
                 this.currentBoss = new PoopTShirtBoss(600, 300);
+                console.log('Created Poop T-Shirt Boss:', this.currentBoss);
                 break;
             case 4:
                 bossImage = 'images/monster_sprites/unidentified_poop_helper_boss.png';
                 dialogueText = "Foolish human! I was never here to help! I planned this poop apocalypse all along! Now face my army of minions!";
                 this.currentBoss = new UnidentifiedHelperBoss(600, 300);
+                console.log('Created Unidentified Helper Boss:', this.currentBoss);
                 break;
+            default:
+                console.error('Invalid level for boss dialogue:', this.level);
+                return;
+        }
+
+        if (this.currentBoss) {
+            console.log('Boss health:', this.currentBoss.health, '/', this.currentBoss.maxHealth);
         }
 
         document.getElementById('bossImage').src = bossImage;
@@ -850,9 +925,27 @@ class Game extends GameState {
     }
 
     continueToBoss() {
+        console.log('Transitioning to boss battle with:', this.currentBoss);
+
+        // Make sure we have a boss
+        if (!this.currentBoss) {
+            console.error('No current boss to transition to!');
+            return;
+        }
+
+        // Set up boss battle
         this.bosses = [this.currentBoss];
         this.currentBoss = null;
+
+        // Restart game loop
+        this.gameRunning = true;
         this.showScreen('gameScreen');
+
+        // Ensure game loop is running
+        if (this.gameRunning) {
+            console.log('Starting game loop for boss battle');
+            this.gameLoop();
+        }
     }
 
     gameOver() {
@@ -877,4 +970,15 @@ let gameInstance;
 window.onload = () => {
     console.log('Window loaded, creating game...');
     gameInstance = new Game();
+
+    // Make sure we're on the title screen and game is not running
+    gameInstance.gameRunning = false;
+    gameInstance.showScreen('titleScreen');
+    console.log('Game initialized, should be on title screen');
+
+    // Debug: Add global function to force title screen
+    window.showTitle = () => {
+        console.log('Force showing title screen...');
+        gameInstance.showScreen('titleScreen');
+    };
 }; 
