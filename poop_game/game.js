@@ -1,3 +1,83 @@
+// Sound Effects System
+class SoundEffects {
+    constructor() {
+        this.audioContext = null;
+        this.initAudioContext();
+    }
+
+    initAudioContext() {
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.warn('Web Audio API not supported');
+        }
+    }
+
+    playSound(frequency, duration, type = 'sine', volume = 0.3) {
+        if (!this.audioContext) return;
+
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+
+        oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+        oscillator.type = type;
+
+        gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+
+        oscillator.start(this.audioContext.currentTime);
+        oscillator.stop(this.audioContext.currentTime + duration);
+    }
+
+    playLaserShoot() {
+        // Laser shooting sound - quick high-pitched zap
+        this.playSound(800, 0.1, 'sawtooth', 0.2);
+        setTimeout(() => {
+            this.playSound(600, 0.05, 'sawtooth', 0.15);
+        }, 50);
+    }
+
+    playHit() {
+        // Hit sound - impact with slight echo
+        this.playSound(300, 0.15, 'square', 0.3);
+        setTimeout(() => {
+            this.playSound(200, 0.1, 'triangle', 0.2);
+        }, 80);
+    }
+
+    playPlayerDamage() {
+        // Player damage sound - descending tone
+        if (!this.audioContext) return;
+
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+
+        oscillator.frequency.setValueAtTime(600, this.audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(100, this.audioContext.currentTime + 0.5);
+        oscillator.type = 'sine';
+
+        gainNode.gain.setValueAtTime(0.4, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.5);
+
+        oscillator.start(this.audioContext.currentTime);
+        oscillator.stop(this.audioContext.currentTime + 0.5);
+    }
+
+    playBossHit() {
+        // Boss hit sound - deeper, more powerful
+        this.playSound(150, 0.2, 'sawtooth', 0.4);
+        setTimeout(() => {
+            this.playSound(120, 0.15, 'square', 0.3);
+        }, 100);
+    }
+}
+
 // Game State
 class GameState {
     constructor() {
@@ -8,6 +88,7 @@ class GameState {
         this.gameRunning = false;
         this.keys = {};
         this.mouse = { x: 0, y: 0, clicked: false };
+        this.soundEffects = new SoundEffects();
     }
 }
 
@@ -121,12 +202,19 @@ class Player extends GameObject {
         const startX = this.facing > 0 ? this.x + this.width : this.x;
         const laser = new Laser(startX, this.y + this.height / 2, this.facing);
         game.lasers.push(laser);
+
+        // Play shooting sound
+        game.soundEffects.playLaserShoot();
     }
 
     takeDamage(game) {
         if (this.invulnerable === 0) {
             game.lives--;
             this.invulnerable = 120; // 2 seconds of invulnerability
+
+            // Play player damage sound
+            game.soundEffects.playPlayerDamage();
+
             if (game.lives <= 0) {
                 game.gameOver();
             }
@@ -234,6 +322,10 @@ class Monster extends GameObject {
     takeDamage(game) {
         this.health--;
         this.hitFlash = 10; // Flash for 10 frames when hit
+
+        // Play hit sound
+        game.soundEffects.playHit();
+
         if (this.health <= 0) {
             game.score += this.points;
             return true; // Monster defeated
@@ -300,6 +392,10 @@ class Boss extends Monster {
 
     takeDamage(game) {
         this.health--;
+
+        // Play boss hit sound (deeper than regular monster hit)
+        game.soundEffects.playBossHit();
+
         if (this.health <= 0) {
             game.score += this.points;
             return true; // Boss defeated
