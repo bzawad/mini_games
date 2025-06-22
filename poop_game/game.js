@@ -618,6 +618,18 @@ class Game extends GameState {
             this.keys[e.key] = true;
             if (e.key === ' ') {
                 e.preventDefault();
+
+                // Handle spacebar for menu navigation
+                if (this.currentScreen === 'titleScreen') {
+                    console.log('Spacebar pressed - starting game');
+                    this.startGame();
+                } else if (this.currentScreen === 'bossDialogue') {
+                    console.log('Spacebar pressed - continuing to boss');
+                    this.continueToBoss();
+                } else if (this.currentScreen === 'gameOverScreen') {
+                    console.log('Spacebar pressed - restarting game');
+                    this.startGame();
+                }
             }
         });
 
