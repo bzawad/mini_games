@@ -21,8 +21,8 @@ const GAME_CONFIG = {
     PANDA_ANGRY_TIME: 25000, // time before panda gets angry
     PANDA_LEAVE_TIME: 35000, // time before panda leaves
     MAX_PANDAS_LOST: 3,
-    DIFFICULTY_INCREASE_INTERVAL: 20000, // increase difficulty every 20 seconds  
-    DIFFICULTY_MULTIPLIER: 0.75 // multiply intervals by this each difficulty increase (more aggressive)
+    DIFFICULTY_INCREASE_INTERVAL: 15000, // increase difficulty every 15 seconds  
+    DIFFICULTY_MULTIPLIER: 0.6 // multiply intervals by this each difficulty increase (much more aggressive)
 };
 
 // Game State
@@ -199,13 +199,10 @@ class Panda {
     updateFeelingIcon() {
         const feelingIcon = this.element.querySelector('.feeling-icon');
 
-        if (this.feeling === 'happy') {
-            feelingIcon.style.display = 'none';
-        } else {
-            const iconSrc = `images/panda_feelings_icons/panda_is_${this.feeling}_icon.png`;
-            feelingIcon.src = iconSrc;
-            feelingIcon.style.display = 'block';
-        }
+        // Always show feeling icon with appropriate image
+        const iconSrc = `images/panda_feelings_icons/panda_is_${this.feeling}_icon.png`;
+        feelingIcon.src = iconSrc;
+        feelingIcon.style.display = 'block';
     }
 
     handleClick() {
@@ -256,6 +253,12 @@ class Panda {
         gameState.pandasLost++;
         updateUI();
 
+        // Check if game should end BEFORE creating new panda
+        if (gameState.pandasLost >= GAME_CONFIG.MAX_PANDAS_LOST) {
+            endGame();
+            return; // Don't create new panda if game is ending
+        }
+
         // Remove this panda and create a new one
         this.destroy();
         const newPandaData = getRandomPanda();
@@ -264,10 +267,6 @@ class Panda {
 
         const gridSlots = elements.game.pandaGrid.children;
         gridSlots[this.slotIndex].replaceWith(newPanda.element);
-
-        if (gameState.pandasLost >= GAME_CONFIG.MAX_PANDAS_LOST) {
-            endGame();
-        }
     }
 
     clearTimers() {
