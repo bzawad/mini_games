@@ -140,23 +140,23 @@ class Player extends GameObject {
     update(game) {
         // Horizontal movement
         this.dx = 0;
-        if (game.keys['ArrowLeft']) {
+        if (game.keys['ArrowLeft'] || game.keys['a'] || game.keys['A']) {
             this.dx = -this.speed;
             this.facing = -1; // Face left
         }
-        if (game.keys['ArrowRight']) {
+        if (game.keys['ArrowRight'] || game.keys['d'] || game.keys['D']) {
             this.dx = this.speed;
             this.facing = 1; // Face right
         }
 
         // Jumping
-        if (game.keys['ArrowUp'] && this.onGround) {
+        if ((game.keys['ArrowUp'] || game.keys['w'] || game.keys['W']) && this.onGround) {
             this.dy = -this.jumpPower;
             this.onGround = false;
         }
 
         // Ducking
-        if (game.keys['ArrowDown']) {
+        if (game.keys['ArrowDown'] || game.keys['s'] || game.keys['S']) {
             if (!this.ducking) {
                 this.ducking = true;
                 this.height = this.originalHeight * 0.6;
