@@ -599,6 +599,10 @@ class Game extends GameState {
             '#98FB98'  // Pale green
         ];
 
+        // Background music
+        this.backgroundMusic = document.getElementById('backgroundMusic');
+        this.musicPlaying = false;
+
         console.log('Game constructor called');
         this.setupEventListeners();
 
@@ -636,7 +640,8 @@ class Game extends GameState {
         document.getElementById('backBtn').addEventListener('click', () => this.showScreen('titleScreen'));
         document.getElementById('continueBtn').addEventListener('click', () => this.continueToBoss());
         document.getElementById('restartBtn').addEventListener('click', () => this.startGame());
-        document.getElementById('titleBtn').addEventListener('click', () => this.showScreen('titleScreen'));
+        document.getElementById('titleBtn').addEventListener('click', () => this.backToTitle());
+        document.getElementById('backToTitleBtn').addEventListener('click', () => this.backToTitle());
     }
 
     showScreen(screenId) {
@@ -690,6 +695,7 @@ class Game extends GameState {
         this.gameRunning = true;
 
         console.log('Starting game...');
+        this.startMusic();
         this.initLevel();
         this.showScreen('gameScreen');
         this.gameLoop();
@@ -846,13 +852,6 @@ class Game extends GameState {
         this.ctx.fillStyle = '#8B4513';
         this.ctx.fillRect(0, 500, this.canvas.width, 100);
 
-        // Debug: Draw a test rectangle to verify canvas is working
-        this.ctx.fillStyle = 'red';
-        this.ctx.fillRect(10, 10, 50, 20);
-        this.ctx.fillStyle = 'white';
-        this.ctx.font = '12px Arial';
-        this.ctx.fillText('CANVAS OK', 15, 25);
-
         // Draw game objects
         if (this.player) {
             console.log('Drawing player at:', this.player.x, this.player.y);
@@ -950,6 +949,7 @@ class Game extends GameState {
 
     gameOver() {
         this.gameRunning = false;
+        this.stopMusic();
         document.getElementById('gameOverTitle').textContent = 'GAME OVER';
         document.getElementById('gameOverMessage').textContent = 'The poop monsters have taken over!';
         document.getElementById('finalScoreValue').textContent = this.score;
@@ -958,10 +958,61 @@ class Game extends GameState {
 
     gameWin() {
         this.gameRunning = false;
+        this.stopMusic();
         document.getElementById('gameOverTitle').textContent = 'VICTORY!';
         document.getElementById('gameOverMessage').textContent = 'You have cleaned up the poop planet!';
         document.getElementById('finalScoreValue').textContent = this.score;
         this.showScreen('gameOverScreen');
+    }
+
+    startMusic() {
+        if (this.backgroundMusic && !this.musicPlaying) {
+            try {
+                this.backgroundMusic.currentTime = 0;
+                this.backgroundMusic.volume = 0.5; // Set volume to 50%
+                const playPromise = this.backgroundMusic.play();
+
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log('Background music started at 50% volume');
+                        this.musicPlaying = true;
+                    }).catch(error => {
+                        console.log('Music autoplay prevented:', error);
+                        // Some browsers prevent autoplay, user needs to interact first
+                    });
+                }
+            } catch (error) {
+                console.log('Error starting music:', error);
+            }
+        }
+    }
+
+    stopMusic() {
+        if (this.backgroundMusic && this.musicPlaying) {
+            this.backgroundMusic.pause();
+            this.backgroundMusic.currentTime = 0;
+            this.musicPlaying = false;
+            console.log('Background music stopped');
+        }
+    }
+
+    backToTitle() {
+        console.log('Returning to title screen');
+        this.gameRunning = false;
+        this.stopMusic();
+
+        // Reset game state
+        this.lives = 3;
+        this.score = 0;
+        this.level = 1;
+        this.player = null;
+        this.monsters = [];
+        this.bosses = [];
+        this.lasers = [];
+        this.projectiles = [];
+        this.currentBoss = null;
+
+        this.showScreen('titleScreen');
     }
 }
 
