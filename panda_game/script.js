@@ -516,9 +516,6 @@ function setGameMode(mode) {
     // Update button states
     elements.buttons.feedMode.classList.toggle('active', mode === 'feed');
     elements.buttons.playMode.classList.toggle('active', mode === 'play');
-
-    // Update body class for cursor
-    document.body.className = `${mode}-mode`;
 }
 
 function updateUI() {
