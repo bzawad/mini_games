@@ -51,6 +51,7 @@ class Player extends GameObject {
         this.originalHeight = this.height;
         this.shootCooldown = 0;
         this.invulnerable = 0;
+        this.facing = 1; // 1 for right, -1 for left
         this.image = new Image();
         this.image.src = 'images/player_sprite.png';
     }
@@ -60,9 +61,11 @@ class Player extends GameObject {
         this.dx = 0;
         if (game.keys['ArrowLeft']) {
             this.dx = -this.speed;
+            this.facing = -1; // Face left
         }
         if (game.keys['ArrowRight']) {
             this.dx = this.speed;
+            this.facing = 1; // Face right
         }
 
         // Jumping
@@ -115,7 +118,8 @@ class Player extends GameObject {
     }
 
     shoot(game) {
-        const laser = new Laser(this.x + this.width, this.y + this.height / 2, 1);
+        const startX = this.facing > 0 ? this.x + this.width : this.x;
+        const laser = new Laser(startX, this.y + this.height / 2, this.facing);
         game.lasers.push(laser);
     }
 
@@ -135,7 +139,15 @@ class Player extends GameObject {
         }
 
         if (this.image.complete && this.image.naturalWidth > 0) {
-            ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            // Flip sprite based on facing direction
+            if (this.facing < 0) {
+                ctx.save();
+                ctx.scale(-1, 1);
+                ctx.drawImage(this.image, -this.x - this.width, this.y, this.width, this.height);
+                ctx.restore();
+            } else {
+                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            }
         } else {
             // Fallback player graphics
             ctx.fillStyle = '#0066CC';
@@ -145,18 +157,27 @@ class Player extends GameObject {
             ctx.fillStyle = '#004499';
             ctx.fillRect(this.x + 5, this.y + 5, this.width - 10, this.height - 10);
 
-            // Gun
+            // Gun (position based on facing direction)
             ctx.fillStyle = '#555555';
-            ctx.fillRect(this.x + this.width, this.y + this.height / 2 - 2, 15, 4);
+            if (this.facing > 0) {
+                ctx.fillRect(this.x + this.width, this.y + this.height / 2 - 2, 15, 4);
+            } else {
+                ctx.fillRect(this.x - 15, this.y + this.height / 2 - 2, 15, 4);
+            }
 
             // Face
             ctx.fillStyle = '#FFE4B5';
             ctx.fillRect(this.x + 10, this.y + 10, 20, 20);
 
-            // Eyes
+            // Eyes (adjust based on facing direction)
             ctx.fillStyle = '#000000';
-            ctx.fillRect(this.x + 15, this.y + 15, 3, 3);
-            ctx.fillRect(this.x + 22, this.y + 15, 3, 3);
+            if (this.facing > 0) {
+                ctx.fillRect(this.x + 15, this.y + 15, 3, 3);
+                ctx.fillRect(this.x + 22, this.y + 15, 3, 3);
+            } else {
+                ctx.fillRect(this.x + 15, this.y + 15, 3, 3);
+                ctx.fillRect(this.x + 22, this.y + 15, 3, 3);
+            }
         }
     }
 }
@@ -170,6 +191,9 @@ class Monster extends GameObject {
         this.image.src = spriteUrl;
         this.chasePlayer = true;
         this.points = 100;
+        this.health = 2;
+        this.maxHealth = 2;
+        this.hitFlash = 0; // For visual feedback when hit
     }
 
     update(game) {
@@ -199,10 +223,31 @@ class Monster extends GameObject {
             this.direction *= -1;
         }
 
+        // Update hit flash
+        if (this.hitFlash > 0) {
+            this.hitFlash--;
+        }
+
         super.update();
     }
 
+    takeDamage(game) {
+        this.health--;
+        this.hitFlash = 10; // Flash for 10 frames when hit
+        if (this.health <= 0) {
+            game.score += this.points;
+            return true; // Monster defeated
+        }
+        return false; // Monster still alive
+    }
+
     draw(ctx) {
+        // Flash white when hit
+        if (this.hitFlash > 0 && this.hitFlash % 4 < 2) {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(this.x - 2, this.y - 2, this.width + 4, this.height + 4);
+        }
+
         if (this.image.complete && this.image.naturalWidth > 0) {
             ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
         } else {
@@ -222,6 +267,21 @@ class Monster extends GameObject {
             // Mouth
             ctx.fillStyle = '#000000';
             ctx.fillRect(this.x + 10, this.y + 20, this.width - 20, 3);
+        }
+
+        // Health indicator
+        if (this.health < this.maxHealth) {
+            const barWidth = this.width;
+            const barHeight = 4;
+            const barX = this.x;
+            const barY = this.y - 8;
+
+            ctx.fillStyle = 'red';
+            ctx.fillRect(barX, barY, barWidth, barHeight);
+
+            ctx.fillStyle = 'green';
+            const healthWidth = (this.health / this.maxHealth) * barWidth;
+            ctx.fillRect(barX, barY, healthWidth, barHeight);
         }
     }
 }
@@ -289,7 +349,7 @@ class Boss extends Monster {
 
 class PooFairyBoss extends Boss {
     constructor(x, y) {
-        super(x, y, 'images/monster_sprites/poo_fairy_boss.png', 3);
+        super(x, y, 'images/monster_sprites/poo_fairy_boss.png', 10);
         this.name = 'Poo Fairy Boss';
     }
 
@@ -311,7 +371,7 @@ class PooFairyBoss extends Boss {
 
 class PoopTShirtBoss extends Boss {
     constructor(x, y) {
-        super(x, y, 'images/monster_sprites/poop_t-shirt_boss.png', 4);
+        super(x, y, 'images/monster_sprites/poop_t-shirt_boss.png', 20);
         this.name = 'Poop T-Shirt Boss';
     }
 
@@ -333,7 +393,7 @@ class PoopTShirtBoss extends Boss {
 
 class UnidentifiedHelperBoss extends Boss {
     constructor(x, y) {
-        super(x, y, 'images/monster_sprites/unidentified_poop_helper_boss.png', 5);
+        super(x, y, 'images/monster_sprites/unidentified_poop_helper_boss.png', 30);
         this.name = 'Unidentified Poop Helper Boss';
         this.revealed = false;
     }
@@ -582,29 +642,37 @@ class Game extends GameState {
         // Update lasers
         this.lasers = this.lasers.filter(laser => {
             const inBounds = laser.update();
+            let laserHit = false;
 
             // Check collisions with monsters
             this.monsters = this.monsters.filter(monster => {
                 if (laser.collidesWith(monster)) {
-                    this.score += monster.points;
-                    this.updateUI();
-                    return false;
+                    laserHit = true;
+                    if (monster.takeDamage(this)) {
+                        // Monster defeated
+                        this.updateUI();
+                        return false;
+                    }
+                    return true; // Monster still alive
                 }
                 return true;
             });
 
             // Check collisions with bosses
-            this.bosses = this.bosses.filter(boss => {
-                if (laser.collidesWith(boss)) {
-                    if (boss.takeDamage(this)) {
-                        // Boss defeated
-                        return false;
+            if (!laserHit) {
+                this.bosses = this.bosses.filter(boss => {
+                    if (laser.collidesWith(boss)) {
+                        laserHit = true;
+                        if (boss.takeDamage(this)) {
+                            // Boss defeated
+                            return false;
+                        }
                     }
-                }
-                return true;
-            });
+                    return true;
+                });
+            }
 
-            return inBounds;
+            return inBounds && !laserHit;
         });
 
         // Update projectiles
@@ -652,7 +720,7 @@ class Game extends GameState {
     levelComplete() {
         this.level++;
 
-        if (this.level <= 3) {
+        if (this.level <= 4) {
             this.showBossDialogue();
         } else {
             this.gameWin();
@@ -713,10 +781,4 @@ let gameInstance;
 window.onload = () => {
     console.log('Window loaded, creating game...');
     gameInstance = new Game();
-
-    // Auto-start the game for testing
-    setTimeout(() => {
-        console.log('Auto-starting game for testing...');
-        gameInstance.startGame();
-    }, 1000);
 }; 
