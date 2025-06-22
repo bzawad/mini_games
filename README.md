@@ -2,7 +2,31 @@
 
 Welcome to the Mini Games Collection! This repository contains a growing collection of fun, browser-based mini games.
 
+These are games I made with help from my kids.
+
 ## 🎯 Games
+
+### 💩 No Poop Allowed - Platform Fighter
+
+A hilarious platform fighter where you battle through a world of poop monsters! Clean up the mess with laser-shooting action and boss battles.
+
+**Features:**
+- 🎮 **Classic Platformer Action**: Run, jump, duck, and shoot your way through poop-filled levels
+- 👾 **Multiple Boss Battles**: Face off against unique bosses including Poo Fairy, Poop T-Shirt, and Unidentified Helper
+- 🔫 **Laser Combat**: Shoot lasers at poop monsters and dodge their attacks
+- 📖 **Story Mode**: Follow the tale of a man who must clean up his poopy mess
+- 🎯 **Progressive Difficulty**: Each level brings new challenges and stronger enemies
+- 💖 **Lives System**: 3 lives to complete your mission - don't let the monsters touch you!
+
+**How to Play:**
+1. Navigate to the `poop_game` folder and open `index.html` in your browser
+2. Use arrow keys to move (← → for left/right, ↑ to jump, ↓ to duck)
+3. Press spacebar or click mouse to shoot lasers at enemies
+4. Defeat all monsters and bosses to progress through levels
+5. Avoid getting touched by enemies or you'll lose a life!
+
+**The Story:**
+*"Once upon a time, a man pooped so much that he pooped out a poop planet full of poop monsters, and he needed to clean up his mess."*
 
 ### 🐼 Panda Playtime
 
@@ -95,6 +119,15 @@ mini_games/
 │   ├── script.js              # Game logic
 │   ├── styles.css             # Game styling
 │   └── panda_playtime.mp3     # Background music
+├── poop_game/                  # Platform fighter game
+│   ├── images/                 # Game sprites and assets
+│   │   ├── monster_sprites/   # Poop monster and boss sprites
+│   │   ├── player_sprite.png  # Player character
+│   │   ├── no_poop_allowed_logo.png # Game logo
+│   │   └── title_background.png # Background image
+│   ├── index.html             # Game HTML
+│   ├── game.js                # Game logic and engine
+│   └── styles.css             # Game styling
 └── README.md                  # This file
 ```
 

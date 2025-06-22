@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>No Poop Allowed - Platform Fighter</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div id="gameContainer">
+        <!-- Title Screen -->
+        <div id="titleScreen" class="screen active">
+            <div class="title-content">
+                <img src="images/no_poop_allowed_logo.png" alt="No Poop Allowed" class="game-logo">
+                <div class="story-text">
+                    <p>Once upon a time, a man pooped so much that he pooped out a poop planet full of poop monsters,
+                        and he needed to clean up his mess.</p>
+                </div>
+                <div class="menu-buttons">
+                    <button id="startBtn" class="menu-btn">START GAME</button>
+                    <button id="rulesBtn" class="menu-btn">RULES</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rules Screen -->
+        <div id="rulesScreen" class="screen">
+            <div class="rules-content">
+                <img src="images/monster_sprites/unidentified_poop_helper_boss.png" alt="Helper" class="rules-boss">
+                <div class="rules-text">
+                    <h2>Game Rules</h2>
+                    <p><strong>Controls:</strong></p>
+                    <ul>
+                        <li>← → Arrow Keys: Move left and right</li>
+                        <li>↑ Arrow Key: Jump</li>
+                        <li>↓ Arrow Key: Duck</li>
+                        <li>Spacebar or Mouse: Shoot laser</li>
+                    </ul>
+                    <p><strong>Objective:</strong></p>
+                    <ul>
+                        <li>Defeat all poop monsters and bosses</li>
+                        <li>Don't let monsters touch you or you'll lose a life</li>
+                        <li>You have 3 lives total</li>
+                        <li>Each boss requires multiple hits to defeat</li>
+                    </ul>
+                </div>
+                <button id="backBtn" class="menu-btn">BACK</button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="screen">
+            <div id="gameUI">
+                <div id="lives">Lives: <span id="livesCount">3</span></div>
+                <div id="level">Level: <span id="levelCount">1</span></div>
+                <div id="score">Score: <span id="scoreCount">0</span></div>
+            </div>
+            <canvas id="gameCanvas" width="1200" height="600"></canvas>
+        </div>
+
+        <!-- Boss Dialogue Screen -->
+        <div id="bossDialogue" class="screen">
+            <div class="dialogue-content">
+                <img id="bossImage" src="" alt="Boss" class="dialogue-boss">
+                <div id="dialogueText" class="dialogue-text"></div>
+                <button id="continueBtn" class="menu-btn">CONTINUE</button>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="screen">
+            <div class="game-over-content">
+                <h1 id="gameOverTitle">GAME OVER</h1>
+                <p id="gameOverMessage">The poop monsters have taken over!</p>
+                <div id="finalScore">Final Score: <span id="finalScoreValue">0</span></div>
+                <button id="restartBtn" class="menu-btn">PLAY AGAIN</button>
+                <button id="titleBtn" class="menu-btn">TITLE SCREEN</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+
+</html>
