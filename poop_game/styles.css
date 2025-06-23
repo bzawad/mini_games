@@ -314,3 +314,182 @@ body {
         font-size: 14px;
     }
 }
+
+/* Victory Screen */
+.victory-content {
+    text-align: center;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.95), rgba(255, 140, 0, 0.95));
+    padding: 40px;
+    border-radius: 20px;
+    border: 5px solid #FFD700;
+    box-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: victoryGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes victoryGlow {
+    from {
+        box-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
+    }
+
+    to {
+        box-shadow: 0 0 60px rgba(255, 215, 0, 1);
+    }
+}
+
+.victory-title {
+    color: #8B0000;
+    font-size: 48px;
+    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8);
+    margin-bottom: 20px;
+    animation: bounce 1s ease-in-out infinite alternate;
+}
+
+@keyframes bounce {
+    from {
+        transform: translateY(0);
+    }
+
+    to {
+        transform: translateY(-10px);
+    }
+}
+
+.celebration {
+    margin: 20px 0;
+}
+
+.celebration-emojis {
+    font-size: 32px;
+    line-height: 1.2;
+    animation: sparkle 3s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+
+    0%,
+    100% {
+        transform: scale(1) rotate(0deg);
+    }
+
+    50% {
+        transform: scale(1.1) rotate(5deg);
+    }
+}
+
+.victory-hero {
+    margin: 30px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.victory-player-sprite {
+    width: 200px;
+    height: 240px;
+    image-rendering: pixelated;
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8));
+    animation: heroFloat 3s ease-in-out infinite;
+}
+
+@keyframes heroFloat {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(-20px) scale(1.05);
+    }
+}
+
+.victory-message {
+    background: rgba(139, 69, 19, 0.8);
+    padding: 25px;
+    border-radius: 15px;
+    margin: 20px 0;
+    border: 3px solid #8B4513;
+}
+
+.victory-message h2 {
+    color: #FFD700;
+    font-size: 28px;
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.victory-message p {
+    color: #FFF8DC;
+    font-size: 18px;
+    line-height: 1.6;
+    margin-bottom: 10px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.victory-score {
+    background: rgba(255, 215, 0, 0.3);
+    padding: 15px;
+    border-radius: 10px;
+    margin: 20px 0;
+    border: 2px solid #FFD700;
+}
+
+.victory-score h3 {
+    color: #8B0000;
+    font-size: 24px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.victory-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 30px 0 20px 0;
+}
+
+.victory-buttons .menu-btn {
+    background: linear-gradient(135deg, #228B22, #32CD32);
+    border: 3px solid #006400;
+    animation: buttonPulse 2s ease-in-out infinite;
+}
+
+@keyframes buttonPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.victory-buttons .menu-btn:hover {
+    background: linear-gradient(135deg, #32CD32, #7CFC00);
+    transform: translateY(-3px) scale(1.05);
+}
+
+@media (max-width: 768px) {
+    .victory-content {
+        padding: 20px;
+        max-width: 95%;
+    }
+
+    .victory-title {
+        font-size: 36px;
+    }
+
+    .victory-player-sprite {
+        width: 150px;
+        height: 180px;
+    }
+
+    .celebration-emojis {
+        font-size: 24px;
+    }
+}

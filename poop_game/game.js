@@ -895,15 +895,29 @@ class Game extends GameState {
             if (e.key === ' ') {
                 e.preventDefault();
 
-                // Handle spacebar for menu navigation
+                // Handle spacebar for menu navigation (but NOT for dialogs)
                 if (this.currentScreen === 'titleScreen') {
                     console.log('Spacebar pressed - starting game');
                     this.startGame();
-                } else if (this.currentScreen === 'bossDialogue') {
-                    console.log('Spacebar pressed - continuing');
-                    this.handleContinue();
                 } else if (this.currentScreen === 'gameOverScreen') {
                     console.log('Spacebar pressed - restarting game');
+                    this.startGame();
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+
+                // Handle Enter key for dialog navigation
+                if (this.currentScreen === 'bossDialogue') {
+                    console.log('Enter pressed - continuing');
+                    this.handleContinue();
+                } else if (this.currentScreen === 'titleScreen') {
+                    console.log('Enter pressed - starting game');
+                    this.startGame();
+                } else if (this.currentScreen === 'gameOverScreen') {
+                    console.log('Enter pressed - restarting game');
+                    this.startGame();
+                } else if (this.currentScreen === 'victoryScreen') {
+                    console.log('Enter pressed - restarting from victory');
                     this.startGame();
                 }
             }
@@ -930,6 +944,10 @@ class Game extends GameState {
         document.getElementById('restartBtn').addEventListener('click', () => this.startGame());
         document.getElementById('titleBtn').addEventListener('click', () => this.backToTitle());
         document.getElementById('backToTitleBtn').addEventListener('click', () => this.backToTitle());
+
+        // Victory screen button events
+        document.getElementById('victoryRestartBtn').addEventListener('click', () => this.startGame());
+        document.getElementById('victoryTitleBtn').addEventListener('click', () => this.backToTitle());
     }
 
     showScreen(screenId) {
@@ -1298,10 +1316,12 @@ class Game extends GameState {
         this.gameRunning = false;
         this.gameLoopRunning = false;
         this.stopMusic();
-        document.getElementById('gameOverTitle').textContent = 'VICTORY!';
-        document.getElementById('gameOverMessage').textContent = 'You have cleaned up the poop planet!';
-        document.getElementById('finalScoreValue').textContent = this.score;
-        this.showScreen('gameOverScreen');
+
+        // Show the special victory screen
+        document.getElementById('victoryScoreValue').textContent = this.score;
+        this.showScreen('victoryScreen');
+
+        console.log('Victory! Player saved the world from the poop apocalypse!');
     }
 
     startMusic() {
