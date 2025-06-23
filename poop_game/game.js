@@ -455,21 +455,75 @@ class PooFairyBoss extends Boss {
     constructor(x, y) {
         super(x, y, 'images/monster_sprites/poo_fairy_boss.png', 10);
         this.name = 'Poo Fairy Boss';
+        this.hoverOffset = 0;
+        this.specialAttackCounter = 0;
     }
 
     update(game) {
         super.update(game);
 
+        // Gentle hovering movement
+        this.hoverOffset += 0.1;
+        this.y += Math.sin(this.hoverOffset) * 0.5;
+
+        // Slight horizontal movement towards player
+        if (game.player) {
+            const playerDistance = game.player.x - this.x;
+            if (Math.abs(playerDistance) > 50) {
+                this.x += playerDistance > 0 ? 0.5 : -0.5;
+            }
+        }
+
+        // Keep boss in bounds
+        if (this.x < 400) this.x = 400;
+        if (this.x > 800) this.x = 800;
+        if (this.y < 100) this.y = 100;
+        if (this.y > 300) this.y = 300;
+
         if (this.attackCooldown <= 0) {
-            this.spawnPoopEmoji(game);
-            this.attackCooldown = 180; // 3 seconds
+            this.specialAttackCounter++;
+
+            // Every 3rd attack, do a special poop rain attack
+            if (this.specialAttackCounter >= 3) {
+                this.poopRainAttack(game);
+                this.specialAttackCounter = 0;
+                this.attackCooldown = 240; // 4 seconds for special attack
+            } else {
+                this.spawnPoopEmoji(game);
+                this.attackCooldown = 120; // 2 seconds for regular attack
+            }
         }
         this.attackCooldown--;
     }
 
     spawnPoopEmoji(game) {
-        const emoji = new PoopEmoji(this.x, this.y + this.height);
-        game.projectiles.push(emoji);
+        // Spawn multiple poop emojis for more challenge
+        const numEmojis = 3;
+        for (let i = 0; i < numEmojis; i++) {
+            const emoji = new PoopEmoji(
+                this.x + (i - 1) * 40, // Spread them out horizontally
+                this.y + this.height,
+                game.player // Pass player reference for targeting
+            );
+            game.projectiles.push(emoji);
+        }
+        console.log('Poo Fairy Boss spawned', numEmojis, 'poop emojis!');
+    }
+
+    poopRainAttack(game) {
+        // Special attack: Rain poop emojis from across the top of the screen
+        const numEmojis = 8;
+        for (let i = 0; i < numEmojis; i++) {
+            const emoji = new PoopEmoji(
+                100 + i * 125, // Spread across the screen width
+                50, // Start from top
+                game.player // Pass player reference for targeting
+            );
+            // Make rain emojis fall faster
+            emoji.dy += 2;
+            game.projectiles.push(emoji);
+        }
+        console.log('Poo Fairy Boss unleashed POOP RAIN attack!');
     }
 }
 
@@ -647,22 +701,53 @@ class Laser extends GameObject {
 }
 
 class PoopEmoji extends GameObject {
-    constructor(x, y) {
+    constructor(x, y, player = null) {
         super(x, y, 30, 30);
         this.speed = 3;
-        this.dx = (Math.random() - 0.5) * 4;
-        this.dy = Math.random() * 2 + 1;
+
+        if (player) {
+            // Aim towards the player's position
+            const deltaX = player.x - x;
+            const deltaY = player.y - y;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+            // Normalize and apply speed
+            this.dx = (deltaX / distance) * this.speed * 0.7; // Slightly slower horizontal
+            this.dy = Math.max(1, (deltaY / distance) * this.speed); // Ensure downward movement
+        } else {
+            // Fallback to random movement
+            this.dx = (Math.random() - 0.5) * 4;
+            this.dy = Math.random() * 2 + 1;
+        }
+
+        this.bounces = 0;
+        this.maxBounces = 2;
     }
 
     update() {
         super.update();
         this.dy += 0.3; // Gravity
-        return this.y < 600; // Return false if out of bounds
+
+        // Bounce off ground
+        if (this.y + this.height > 500 && this.dy > 0 && this.bounces < this.maxBounces) {
+            this.y = 500 - this.height;
+            this.dy = -this.dy * 0.6; // Bounce with energy loss
+            this.dx *= 0.8; // Reduce horizontal speed
+            this.bounces++;
+        }
+
+        return this.y < 650; // Return false if out of bounds (below ground level)
     }
 
     draw(ctx) {
         ctx.font = '30px Arial';
         ctx.fillText('💩', this.x, this.y + this.height);
+
+        // Add a slight glow effect for the poop emojis
+        ctx.shadowColor = '#8B4513';
+        ctx.shadowBlur = 5;
+        ctx.fillText('💩', this.x, this.y + this.height);
+        ctx.shadowBlur = 0;
     }
 }
 
