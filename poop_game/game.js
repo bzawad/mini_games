@@ -531,21 +531,62 @@ class PoopTShirtBoss extends Boss {
     constructor(x, y) {
         super(x, y, 'images/monster_sprites/poop_t-shirt_boss.png', 20);
         this.name = 'Poop T-Shirt Boss';
+        this.facing = -1; // -1 for left, 1 for right
+        this.moveTimer = 0;
+        this.moveCooldown = 0;
     }
 
     update(game) {
         super.update(game);
 
+        // Boss movement and turning logic
+        if (game.player) {
+            // Determine which direction the player is in
+            const playerDirection = game.player.x > this.x ? 1 : -1;
+
+            // Turn to face the player
+            this.facing = playerDirection;
+
+            // Move slightly toward the player occasionally
+            this.moveTimer++;
+            if (this.moveTimer > 60 && this.moveCooldown <= 0) { // Every second
+                const distanceToPlayer = Math.abs(game.player.x - this.x);
+
+                // Only move if player is far away (more than 200 pixels)
+                if (distanceToPlayer > 200) {
+                    this.x += this.facing * 1.5; // Slow movement toward player
+                    this.moveCooldown = 120; // 2 second cooldown between moves
+                }
+                this.moveTimer = 0;
+            }
+
+            if (this.moveCooldown > 0) {
+                this.moveCooldown--;
+            }
+        }
+
+        // Keep boss in bounds
+        if (this.x < 100) this.x = 100;
+        if (this.x > 1000) this.x = 1000;
+
         if (this.attackCooldown <= 0) {
             this.shootTShirt(game);
-            this.attackCooldown = 120; // 2 seconds
+            this.attackCooldown = 90; // 1.5 seconds (faster than before)
         }
         this.attackCooldown--;
     }
 
     shootTShirt(game) {
-        const tshirt = new TShirtProjectile(this.x, this.y + this.height / 2);
+        // Shoot toward the player's direction
+        const direction = this.facing;
+        const tshirt = new TShirtProjectile(
+            this.x + (direction > 0 ? this.width : 0), // Start from appropriate side of boss
+            this.y + this.height / 2,
+            direction,
+            game.player // Pass player reference for targeting
+        );
         game.projectiles.push(tshirt);
+        console.log('T-Shirt Boss fired t-shirt', direction > 0 ? 'right' : 'left');
     }
 }
 
@@ -752,20 +793,65 @@ class PoopEmoji extends GameObject {
 }
 
 class TShirtProjectile extends GameObject {
-    constructor(x, y) {
+    constructor(x, y, direction = -1, player = null) {
         super(x, y, 25, 25);
         this.speed = 4;
-        this.dx = -this.speed;
+
+        if (player && direction) {
+            // Aim towards the player's position with some prediction
+            const deltaX = player.x - x;
+            const deltaY = player.y - y;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+            if (distance > 0) {
+                // Normalize and apply speed, with player prediction
+                const predictedPlayerX = player.x + player.dx * 10; // Predict where player will be
+                const adjustedDeltaX = predictedPlayerX - x;
+                const adjustedDistance = Math.sqrt(adjustedDeltaX * adjustedDeltaX + deltaY * deltaY);
+
+                this.dx = (adjustedDeltaX / adjustedDistance) * this.speed;
+                this.dy = (deltaY / adjustedDistance) * this.speed * 0.5; // Slower vertical
+            } else {
+                // Fallback to direction-based movement
+                this.dx = direction * this.speed;
+                this.dy = 0;
+            }
+        } else {
+            // Simple directional movement (backward compatibility)
+            this.dx = direction * this.speed;
+            this.dy = 0;
+        }
+
+        this.bounces = 0;
+        this.maxBounces = 1;
     }
 
     update() {
         super.update();
-        return this.x > -50; // Return false if out of bounds
+
+        // Add slight gravity effect
+        this.dy += 0.2;
+
+        // Bounce off ground once
+        if (this.y + this.height > 500 && this.dy > 0 && this.bounces < this.maxBounces) {
+            this.y = 500 - this.height;
+            this.dy = -this.dy * 0.4; // Small bounce
+            this.dx *= 0.8; // Reduce horizontal speed
+            this.bounces++;
+        }
+
+        return this.x > -50 && this.x < 1250 && this.y < 650; // Return false if out of bounds
     }
 
     draw(ctx) {
         ctx.font = '25px Arial';
         ctx.fillText('👕', this.x, this.y + this.height);
+
+        // Add slight glow effect
+        ctx.shadowColor = '#FF69B4';
+        ctx.shadowBlur = 3;
+        ctx.fillText('👕', this.x, this.y + this.height);
+        ctx.shadowBlur = 0;
     }
 }
 
