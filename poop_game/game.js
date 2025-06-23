@@ -86,6 +86,7 @@ class GameState {
         this.lives = 3;
         this.score = 0;
         this.gameRunning = false;
+        this.gameLoopRunning = false;
         this.keys = {};
         this.mouse = { x: 0, y: 0, clicked: false };
         this.soundEffects = new SoundEffects();
@@ -209,6 +210,13 @@ class Player extends GameObject {
 
     takeDamage(game) {
         if (this.invulnerable === 0) {
+            // Don't take damage during tutorial
+            if (game.level === 0) {
+                console.log('Player hit during tutorial - no damage taken');
+                this.invulnerable = 60; // Brief invulnerability for visual feedback
+                return;
+            }
+
             game.lives--;
             this.invulnerable = 120; // 2 seconds of invulnerability
 
@@ -518,6 +526,102 @@ class UnidentifiedHelperBoss extends Boss {
     }
 }
 
+class TutorialHelper extends GameObject {
+    constructor(x, y) {
+        super(x, y, 80, 80);
+        this.image = new Image();
+        this.image.src = 'images/monster_sprites/unidentified_poop_helper_boss.png';
+        this.friendly = true;
+        this.name = 'Helpful Guide';
+        this.tutorialTimer = 0;
+    }
+
+    update(game) {
+        // Tutorial helper doesn't move or attack
+        // Just stands there looking friendly
+
+        // After the first dialogue, wait a bit then trigger second dialogue
+        if (game.tutorialStep === 1 && game.level === 0) {
+            this.tutorialTimer++;
+            // After 3 seconds (180 frames at 60fps), trigger second dialogue
+            if (this.tutorialTimer > 180) {
+                console.log('Tutorial timer triggered - showing second dialogue');
+                game.triggerSecondTutorialDialogue();
+                this.tutorialTimer = 0; // Reset timer
+            }
+        }
+    }
+
+    draw(ctx) {
+        if (this.image.complete && this.image.naturalWidth > 0) {
+            ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+        } else {
+            // Fallback friendly helper graphics
+            ctx.fillStyle = '#228B22';
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+
+            // Helper details
+            ctx.fillStyle = '#32CD32';
+            ctx.fillRect(this.x + 8, this.y + 8, this.width - 16, this.height - 16);
+
+            // Friendly eyes
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(this.x + 20, this.y + 20, 8, 8);
+            ctx.fillRect(this.x + this.width - 28, this.y + 20, 8, 8);
+
+            // Smile
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(this.x + 25, this.y + 45, this.width - 50, 3);
+
+            // Helper indicator
+            ctx.fillStyle = '#FFD700';
+            ctx.font = '16px Arial';
+            ctx.fillText('?', this.x + this.width / 2 - 5, this.y - 10);
+        }
+
+        // Show instruction text during tutorial step 1
+        if (this.tutorialTimer > 0 && this.tutorialTimer < 180) {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Try moving around with WASD or Arrow Keys!', this.x + this.width / 2, this.y - 40);
+            ctx.fillText('Press Spacebar to shoot!', this.x + this.width / 2, this.y - 15);
+            ctx.textAlign = 'left'; // Reset text alignment
+        }
+    }
+
+    spawnTutorialMonsters(game) {
+        // Spawn just 2 easy monsters for tutorial
+        const tutorialSprites = [
+            'images/monster_sprites/evil_poop.png',
+            'images/monster_sprites/cyclops_poop.png'
+        ];
+
+        console.log('Spawning tutorial monsters...');
+
+        for (let i = 0; i < 2; i++) {
+            const sprite = tutorialSprites[i % tutorialSprites.length];
+            const monster = new Monster(
+                500 + i * 200,  // Spread them out more
+                350,             // Position them on the ground
+                sprite
+            );
+            // Make tutorial monsters much easier
+            monster.health = 1;
+            monster.maxHealth = 1;
+            monster.speed = 0.3; // Very slow movement
+            monster.chasePlayer = false; // Don't chase aggressively
+            game.monsters.push(monster);
+            console.log(`Tutorial monster ${i + 1} created at:`, monster.x, monster.y);
+        }
+        console.log('Tutorial monsters spawned:', game.monsters.length);
+        console.log('All monsters:', game.monsters);
+
+        // Mark that tutorial monsters have been spawned
+        game.tutorialMonstersSpawned = true;
+    }
+}
+
 class Laser extends GameObject {
     constructor(x, y, direction) {
         super(x, y, 20, 4);
@@ -603,6 +707,11 @@ class Game extends GameState {
         this.backgroundMusic = document.getElementById('backgroundMusic');
         this.musicPlaying = false;
 
+        // Tutorial state
+        this.tutorialStep = 0;
+        this.tutorialHelper = null;
+        this.tutorialMonstersSpawned = false;
+
         console.log('Game constructor called');
         this.setupEventListeners();
 
@@ -610,6 +719,88 @@ class Game extends GameState {
         this.gameRunning = false;
         this.currentScreen = 'titleScreen';
         this.showScreen('titleScreen');
+    }
+
+    showTutorialDialogue() {
+        let dialogueText;
+
+        console.log('showTutorialDialogue called - Current step:', this.tutorialStep);
+
+        if (this.tutorialStep === 0) {
+            dialogueText = "Hello there! I'm here to help you clean up this poop-infested planet. Let me teach you the basics. Use WASD or Arrow Keys to move around, and Spacebar to shoot your laser!";
+            this.tutorialStep = 1;
+            console.log('Set to tutorial step 1');
+        } else if (this.tutorialStep === 1) {
+            dialogueText = "Great! Now I'll release some practice monsters for you to defeat. Remember: move with WASD/Arrows, jump with W/↑, duck with S/↓, and shoot with Spacebar. Good luck!";
+            this.tutorialStep = 2;
+            console.log('Set to tutorial step 2');
+        }
+
+        document.getElementById('bossImage').src = 'images/monster_sprites/unidentified_poop_helper_boss.png';
+        document.getElementById('dialogueText').textContent = dialogueText;
+        this.showScreen('bossDialogue');
+    }
+
+    triggerSecondTutorialDialogue() {
+        console.log('Triggering second tutorial dialogue');
+        if (this.tutorialStep === 1 && this.level === 0) {
+            const dialogueText = "Great! Now I'll release some practice monsters for you to defeat. Remember: move with WASD/Arrows, jump with W/↑, duck with S/↓, and shoot with Spacebar. Good luck!";
+            this.tutorialStep = 2;
+            console.log('Set to tutorial step 2');
+
+            document.getElementById('bossImage').src = 'images/monster_sprites/unidentified_poop_helper_boss.png';
+            document.getElementById('dialogueText').textContent = dialogueText;
+            this.showScreen('bossDialogue');
+        }
+    }
+
+    handleContinue() {
+        console.log('handleContinue called - Level:', this.level, 'Tutorial step:', this.tutorialStep);
+
+        if (this.level === 0) {
+            // Tutorial level
+            if (this.tutorialStep === 1) {
+                // First dialogue done, start tutorial gameplay
+                console.log('Starting tutorial gameplay...');
+                this.initLevel();
+                this.showScreen('gameScreen');
+                this.gameRunning = true;
+                if (!this.gameLoopRunning) {
+                    this.gameLoopRunning = true;
+                    this.gameLoop();
+                }
+            } else if (this.tutorialStep === 2) {
+                // Second dialogue done, spawn tutorial monsters
+                console.log('Spawning tutorial monsters...');
+                if (this.tutorialHelper) {
+                    this.tutorialHelper.spawnTutorialMonsters(this);
+                    this.tutorialMonstersSpawned = true;
+                } else {
+                    console.error('No tutorial helper found!');
+                }
+                this.showScreen('gameScreen');
+                this.gameRunning = true; // Make sure game loop is running
+                if (!this.gameLoopRunning) {
+                    this.gameLoopRunning = true;
+                    this.gameLoop();
+                }
+            }
+        } else if (this.level === 1 && this.tutorialStep > 0) {
+            // Just finished tutorial, starting level 1
+            console.log('Tutorial completed, starting level 1');
+            this.tutorialStep = 0; // Reset tutorial
+            this.tutorialHelper = null; // Remove helper
+            this.initLevel();
+            this.showScreen('gameScreen');
+            this.gameRunning = true;
+            if (!this.gameLoopRunning) {
+                this.gameLoopRunning = true;
+                this.gameLoop();
+            }
+        } else {
+            // Regular boss battles
+            this.continueToBoss();
+        }
     }
 
     setupEventListeners() {
@@ -624,8 +815,8 @@ class Game extends GameState {
                     console.log('Spacebar pressed - starting game');
                     this.startGame();
                 } else if (this.currentScreen === 'bossDialogue') {
-                    console.log('Spacebar pressed - continuing to boss');
-                    this.continueToBoss();
+                    console.log('Spacebar pressed - continuing');
+                    this.handleContinue();
                 } else if (this.currentScreen === 'gameOverScreen') {
                     console.log('Spacebar pressed - restarting game');
                     this.startGame();
@@ -650,7 +841,7 @@ class Game extends GameState {
         document.getElementById('startBtn').addEventListener('click', () => this.startGame());
         document.getElementById('rulesBtn').addEventListener('click', () => this.showScreen('rulesScreen'));
         document.getElementById('backBtn').addEventListener('click', () => this.showScreen('titleScreen'));
-        document.getElementById('continueBtn').addEventListener('click', () => this.continueToBoss());
+        document.getElementById('continueBtn').addEventListener('click', () => this.handleContinue());
         document.getElementById('restartBtn').addEventListener('click', () => this.startGame());
         document.getElementById('titleBtn').addEventListener('click', () => this.backToTitle());
         document.getElementById('backToTitleBtn').addEventListener('click', () => this.backToTitle());
@@ -682,11 +873,15 @@ class Game extends GameState {
             if (!this.gameRunning && (this.player || this.bosses.length > 0)) {
                 console.log('Resuming game loop for screen transition to gameScreen');
                 this.gameRunning = true;
-                this.gameLoop();
+                if (!this.gameLoopRunning) {
+                    this.gameLoopRunning = true;
+                    this.gameLoop();
+                }
             }
         } else {
             // Not on game screen - stop game loop
             this.gameRunning = false;
+            this.gameLoopRunning = false;
         }
 
         // Force hide canvas when not on game screen
@@ -703,14 +898,12 @@ class Game extends GameState {
     startGame() {
         this.lives = 3;
         this.score = 0;
-        this.level = 1;
+        this.level = 0; // Start with tutorial level
         this.gameRunning = true;
 
         console.log('Starting game...');
         this.startMusic();
-        this.initLevel();
-        this.showScreen('gameScreen');
-        this.gameLoop();
+        this.showTutorialDialogue();
     }
 
     initLevel() {
@@ -722,24 +915,35 @@ class Game extends GameState {
         this.projectiles = [];
         this.currentBoss = null;
 
-        // Spawn monsters based on level
-        const monsterSprites = [
-            'images/monster_sprites/evil_poop.png',
-            'images/monster_sprites/cyclops_poop.png',
-            'images/monster_sprites/hot_poop.png',
-            'images/monster_sprites/radioactive_poop.png',
-            'images/monster_sprites/robopoop.png',
-            'images/monster_sprites/melting_poop.png'
-        ];
+        // Reset tutorial flag
+        if (this.level === 0) {
+            this.tutorialMonstersSpawned = false;
+        }
 
-        for (let i = 0; i < 3 + this.level; i++) {
-            const sprite = monsterSprites[Math.floor(Math.random() * monsterSprites.length)];
-            const monster = new Monster(
-                200 + Math.random() * 800,
-                300 + Math.random() * 100,
-                sprite
-            );
-            this.monsters.push(monster);
+        if (this.level === 0) {
+            // Tutorial level - create helper character but don't spawn monsters yet
+            this.tutorialHelper = new TutorialHelper(900, 300);
+            console.log('Tutorial helper created');
+        } else {
+            // Normal levels - spawn monsters based on level
+            const monsterSprites = [
+                'images/monster_sprites/evil_poop.png',
+                'images/monster_sprites/cyclops_poop.png',
+                'images/monster_sprites/hot_poop.png',
+                'images/monster_sprites/radioactive_poop.png',
+                'images/monster_sprites/robopoop.png',
+                'images/monster_sprites/melting_poop.png'
+            ];
+
+            for (let i = 0; i < 3 + this.level; i++) {
+                const sprite = monsterSprites[Math.floor(Math.random() * monsterSprites.length)];
+                const monster = new Monster(
+                    200 + Math.random() * 800,
+                    300 + Math.random() * 100,
+                    sprite
+                );
+                this.monsters.push(monster);
+            }
         }
 
         console.log('Player created at:', this.player.x, this.player.y);
@@ -757,13 +961,16 @@ class Game extends GameState {
     gameLoop() {
         if (!this.gameRunning) {
             console.log('Game loop stopped - gameRunning is false');
+            this.gameLoopRunning = false;
             return;
         }
 
         this.update();
         this.draw();
 
-        requestAnimationFrame(() => this.gameLoop());
+        if (this.gameLoopRunning) {
+            requestAnimationFrame(() => this.gameLoop());
+        }
     }
 
     update() {
@@ -795,6 +1002,11 @@ class Game extends GameState {
                 this.player.takeDamage(this);
             }
         });
+
+        // Update tutorial helper
+        if (this.level === 0 && this.tutorialHelper) {
+            this.tutorialHelper.update(this);
+        }
 
         // Update lasers
         this.lasers = this.lasers.filter(laser => {
@@ -847,6 +1059,16 @@ class Game extends GameState {
 
         // Check level completion
         if (this.monsters.length === 0 && this.bosses.length === 0 && !this.currentBoss) {
+            // Special handling for tutorial level
+            if (this.level === 0) {
+                // Only complete tutorial if we've spawned monsters and defeated them
+                if (this.tutorialStep === 2 && this.tutorialMonstersSpawned) {
+                    console.log('Tutorial complete! All tutorial monsters defeated.');
+                    this.levelComplete();
+                }
+                // Otherwise, don't complete the level yet
+                return;
+            }
             console.log('Level complete! Monsters:', this.monsters.length, 'Bosses:', this.bosses.length, 'Current boss:', this.currentBoss);
             this.levelComplete();
         }
@@ -856,7 +1078,13 @@ class Game extends GameState {
         if (this.currentScreen !== 'gameScreen' || !this.gameRunning) return;
 
         // Clear canvas with level-appropriate background
-        const bgColor = this.levelColors[(this.level - 1) % this.levelColors.length];
+        let bgColor;
+        if (this.level === 0) {
+            // Tutorial level - special green background
+            bgColor = '#87CEEB'; // Sky blue for tutorial
+        } else {
+            bgColor = this.levelColors[(this.level - 1) % this.levelColors.length];
+        }
         this.ctx.fillStyle = bgColor;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -883,6 +1111,12 @@ class Game extends GameState {
             console.log(`Boss ${index} at:`, boss.x, boss.y, 'Health:', boss.health);
             boss.draw(this.ctx);
         });
+
+        // Draw tutorial helper if in tutorial
+        if (this.level === 0 && this.tutorialHelper) {
+            this.tutorialHelper.draw(this.ctx);
+        }
+
         this.lasers.forEach(laser => laser.draw(this.ctx));
         this.projectiles.forEach(projectile => projectile.draw(this.ctx));
     }
@@ -890,7 +1124,12 @@ class Game extends GameState {
     levelComplete() {
         this.level++;
 
-        if (this.level <= 4) {
+        if (this.level === 1) {
+            // Just finished tutorial, show success message and continue to level 1
+            document.getElementById('bossImage').src = 'images/monster_sprites/unidentified_poop_helper_boss.png';
+            document.getElementById('dialogueText').textContent = "Excellent work! You've mastered the basics. Now the real adventure begins. Good luck out there!";
+            this.showScreen('bossDialogue');
+        } else if (this.level <= 4) {
             this.showBossDialogue();
         } else {
             this.gameWin();
@@ -953,14 +1192,16 @@ class Game extends GameState {
         this.showScreen('gameScreen');
 
         // Ensure game loop is running
-        if (this.gameRunning) {
+        if (this.gameRunning && !this.gameLoopRunning) {
             console.log('Starting game loop for boss battle');
+            this.gameLoopRunning = true;
             this.gameLoop();
         }
     }
 
     gameOver() {
         this.gameRunning = false;
+        this.gameLoopRunning = false;
         this.stopMusic();
         document.getElementById('gameOverTitle').textContent = 'GAME OVER';
         document.getElementById('gameOverMessage').textContent = 'The poop monsters have taken over!';
@@ -970,6 +1211,7 @@ class Game extends GameState {
 
     gameWin() {
         this.gameRunning = false;
+        this.gameLoopRunning = false;
         this.stopMusic();
         document.getElementById('gameOverTitle').textContent = 'VICTORY!';
         document.getElementById('gameOverMessage').textContent = 'You have cleaned up the poop planet!';
@@ -1011,6 +1253,7 @@ class Game extends GameState {
     backToTitle() {
         console.log('Returning to title screen');
         this.gameRunning = false;
+        this.gameLoopRunning = false;
         this.stopMusic();
 
         // Reset game state
@@ -1024,6 +1267,11 @@ class Game extends GameState {
         this.projectiles = [];
         this.currentBoss = null;
 
+        // Reset tutorial state
+        this.tutorialStep = 0;
+        this.tutorialHelper = null;
+        this.tutorialMonstersSpawned = false;
+
         this.showScreen('titleScreen');
     }
 }
@@ -1036,6 +1284,7 @@ window.onload = () => {
 
     // Make sure we're on the title screen and game is not running
     gameInstance.gameRunning = false;
+    gameInstance.gameLoopRunning = false;
     gameInstance.showScreen('titleScreen');
     console.log('Game initialized, should be on title screen');
 
