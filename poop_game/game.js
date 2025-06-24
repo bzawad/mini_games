@@ -671,7 +671,7 @@ class PoopTShirtBoss extends Boss {
 
         if (this.attackCooldown <= 0) {
             this.shootTShirt(game);
-            this.attackCooldown = 90; // 1.5 seconds (faster than before)
+            this.attackCooldown = 135; // 2.25 seconds (reduced shooting rate by about a third)
         }
         this.attackCooldown--;
     }
@@ -822,10 +822,19 @@ class Laser extends GameObject {
         super(x, y, 20, 4);
         this.speed = 10;
         this.dx = this.speed * direction;
+        this.startX = x; // Track starting position
+        this.maxRange = 400; // About 1/3 of screen width (1200px / 3)
     }
 
     update() {
         super.update();
+
+        // Check if laser has traveled beyond its maximum range
+        const distanceTraveled = Math.abs(this.x - this.startX);
+        if (distanceTraveled > this.maxRange) {
+            return false; // Laser expires due to range limit
+        }
+
         return this.x > -50 && this.x < 5000; // Extended bounds for scrolling levels
     }
 
