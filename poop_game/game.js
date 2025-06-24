@@ -219,9 +219,9 @@ class Player extends GameObject {
         if (this.x < 0) this.x = 0;
         if (this.x + this.width > game.levelWidth) this.x = game.levelWidth - this.width;
 
-        // Update camera to follow player (only for scrolling levels)
-        if (game.level === 1) {
-            // Only level 1 is a scrolling level
+        // Update camera to follow player (only for platform levels)
+        if (game.level === 1 || game.level === 3 || game.level === 5) {
+            // Platform levels are scrolling levels
             game.camera.targetX = this.x - game.canvas.width / 2;
             game.camera.targetY = 0; // Keep camera at same height
         } else {
@@ -321,9 +321,9 @@ class Player extends GameObject {
 }
 
 class Monster extends GameObject {
-    constructor(x, y, spriteUrl) {
+    constructor(x, y, spriteUrl, speedMultiplier = 1) {
         super(x, y, 40, 40);
-        this.speed = 1 + Math.random() * 2;
+        this.speed = (1 + Math.random() * 2) * speedMultiplier;
         this.direction = Math.random() < 0.5 ? -1 : 1;
         this.image = new Image();
         this.image.src = spriteUrl;
@@ -897,29 +897,40 @@ class TShirtProjectile extends GameObject {
         super(x, y, 25, 25);
         this.speed = 4;
 
-        if (player && direction) {
-            // Aim towards the player's position with some prediction
+        // Randomly choose between different shot types
+        const shotType = Math.random();
+
+        if (shotType < 0.3) {
+            // 30% chance: Straight shot
+            this.dx = direction * this.speed;
+            this.dy = 0;
+            this.shotType = 'straight';
+        } else if (player && direction) {
+            // 70% chance: Arcing shot towards player
             const deltaX = player.x - x;
             const deltaY = player.y - y;
             const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
             if (distance > 0) {
-                // Normalize and apply speed, with player prediction
-                const predictedPlayerX = player.x + player.dx * 10; // Predict where player will be
+                // Create a nice arc by adding upward initial velocity
+                const predictedPlayerX = player.x + player.dx * 15; // Predict where player will be
                 const adjustedDeltaX = predictedPlayerX - x;
                 const adjustedDistance = Math.sqrt(adjustedDeltaX * adjustedDeltaX + deltaY * deltaY);
 
                 this.dx = (adjustedDeltaX / adjustedDistance) * this.speed;
-                this.dy = (deltaY / adjustedDistance) * this.speed * 0.5; // Slower vertical
+                // Add upward arc for better trajectory
+                this.dy = (deltaY / adjustedDistance) * this.speed * 0.3 - 2; // Start with upward velocity
             } else {
-                // Fallback to direction-based movement
+                // Fallback to arcing shot
                 this.dx = direction * this.speed;
-                this.dy = 0;
+                this.dy = -1.5; // Upward arc
             }
+            this.shotType = 'arc';
         } else {
-            // Simple directional movement (backward compatibility)
+            // Fallback arcing shot
             this.dx = direction * this.speed;
-            this.dy = 0;
+            this.dy = -1.5; // Upward arc
+            this.shotType = 'arc';
         }
 
         this.bounces = 0;
@@ -929,14 +940,19 @@ class TShirtProjectile extends GameObject {
     update() {
         super.update();
 
-        // Add slight gravity effect
-        this.dy += 0.2;
+        // Apply gravity only to arcing shots, lighter gravity
+        if (this.shotType === 'arc') {
+            this.dy += 0.08; // Much lighter gravity for better arc
+        } else {
+            // Straight shots have very slight gravity
+            this.dy += 0.02;
+        }
 
         // Bounce off ground once
         if (this.y + this.height > 500 && this.dy > 0 && this.bounces < this.maxBounces) {
             this.y = 500 - this.height;
-            this.dy = -this.dy * 0.4; // Small bounce
-            this.dx *= 0.8; // Reduce horizontal speed
+            this.dy = -this.dy * 0.5; // Better bounce
+            this.dx *= 0.9; // Less speed reduction
             this.bounces++;
         }
 
@@ -1288,53 +1304,17 @@ class Game extends GameState {
             this.tutorialHelper = new TutorialHelper(900, 300);
             this.levelWidth = 1200; // Standard level width for tutorial
             console.log('Tutorial helper created');
-        } else if (this.level === 1) {
-            // Level 1 - Side-scrolling platform level
+        } else if (this.level === 1 || this.level === 3 || this.level === 5) {
+            // Platform levels - Side-scrolling with unique characteristics
             this.player = new Player(100, 400); // Start at beginning
             this.levelWidth = 1200 * 4; // 4 times screen width
 
-            // Create platforms with progressive difficulty (reachable heights)
-            this.platforms = [
-                // Starting platforms - easily reachable
-                new Platform(400, 420, 100, 20),  // 80px jump
-                new Platform(600, 380, 100, 20),  // 120px jump
-                new Platform(750, 420, 80, 20),   // Step back down
-                new Platform(900, 360, 100, 20),  // 140px jump (max reachable)
+            // Create platforms (layout varies by level)
+            this.createPlatformLevel();
 
-                // Middle section - stepping stone progression
-                new Platform(1100, 400, 80, 20),  // Step down
-                new Platform(1250, 350, 100, 20), // Step up
-                new Platform(1400, 300, 80, 20),  // Higher step
-                new Platform(1550, 350, 100, 20), // Step down for safety
-                new Platform(1700, 280, 100, 20), // High platform
-
-                // Bowl-inspired floating section with steps
-                new Platform(1900, 380, 100, 20), // Low entry
-                new Platform(2050, 320, 80, 20),  // Mid step
-                new Platform(2200, 260, 120, 20), // High center
-                new Platform(2350, 320, 80, 20),  // Mid step down
-                new Platform(2500, 380, 100, 20), // Low exit
-
-                // Final pyramid-inspired section with stepping stones
-                new Platform(2700, 400, 100, 20), // Base step
-                new Platform(2850, 350, 100, 20), // Second step
-                new Platform(3000, 300, 100, 20), // Third step
-                new Platform(3150, 250, 100, 20), // Fourth step (highest)
-                new Platform(3300, 300, 100, 20), // Step down
-
-                // Final approach to door
-                new Platform(3500, 380, 150, 20)
-            ];
-
-            // Create door at the end
-            this.door = new Door(3700, 420);
-
-            // Initialize dynamic spawning system for level 1
-            this.initDynamicSpawning();
-
-            console.log('Level 1 side-scrolling level created with', this.platforms.length, 'platforms and dynamic spawning');
+            console.log(`Platform Level ${this.level} created with`, this.platforms.length, 'platforms and dynamic spawning');
         } else {
-            // Boss levels (2, 3, 4) and other levels - NO SCROLLING, NO PLATFORMS
+            // Boss levels (2, 4, 6) and other levels - NO SCROLLING, NO PLATFORMS
             this.player = new Player(100, 400); // Always start at beginning position
             this.levelWidth = 1200; // Standard level width
 
@@ -1350,8 +1330,8 @@ class Game extends GameState {
                 'images/monster_sprites/melting_poop.png'
             ];
 
-            // Only spawn regular monsters for non-boss levels (level 5+)
-            if (this.level > 4) {
+            // Only spawn regular monsters for non-boss levels (level 7+)
+            if (this.level > 6) {
                 for (let i = 0; i < 3 + this.level; i++) {
                     const sprite = monsterSprites[Math.floor(Math.random() * monsterSprites.length)];
                     const monster = new Monster(
@@ -1373,8 +1353,113 @@ class Game extends GameState {
         this.updateUI();
     }
 
+    createPlatformLevel() {
+        // Create platforms with variations based on level
+        if (this.level === 1) {
+            // Platform Level 1 - Original layout
+            this.platforms = [
+                // Starting platforms - easily reachable
+                new Platform(400, 420, 100, 20),
+                new Platform(600, 380, 100, 20),
+                new Platform(750, 420, 80, 20),
+                new Platform(900, 360, 100, 20),
+
+                // Middle section - stepping stone progression
+                new Platform(1100, 400, 80, 20),
+                new Platform(1250, 350, 100, 20),
+                new Platform(1400, 300, 80, 20),
+                new Platform(1550, 350, 100, 20),
+                new Platform(1700, 280, 100, 20),
+
+                // Bowl-inspired floating section with steps
+                new Platform(1900, 380, 100, 20),
+                new Platform(2050, 320, 80, 20),
+                new Platform(2200, 260, 120, 20),
+                new Platform(2350, 320, 80, 20),
+                new Platform(2500, 380, 100, 20),
+
+                // Final pyramid-inspired section with stepping stones
+                new Platform(2700, 400, 100, 20),
+                new Platform(2850, 350, 100, 20),
+                new Platform(3000, 300, 100, 20),
+                new Platform(3150, 250, 100, 20),
+                new Platform(3300, 300, 100, 20),
+
+                // Final approach to door
+                new Platform(3500, 380, 150, 20)
+            ];
+        } else if (this.level === 3) {
+            // Platform Level 2 - More challenging layout
+            this.platforms = [
+                // Wider gaps, more precise jumps
+                new Platform(500, 400, 80, 20),
+                new Platform(700, 340, 80, 20),
+                new Platform(900, 380, 80, 20),
+                new Platform(1100, 320, 80, 20),
+
+                // Multiple height levels
+                new Platform(1300, 280, 100, 20),
+                new Platform(1500, 340, 80, 20),
+                new Platform(1700, 260, 100, 20),
+                new Platform(1900, 320, 80, 20),
+
+                // Floating island section
+                new Platform(2100, 300, 120, 20),
+                new Platform(2300, 240, 100, 20),
+                new Platform(2500, 300, 120, 20),
+
+                // Ascending challenge
+                new Platform(2750, 380, 80, 20),
+                new Platform(2900, 340, 80, 20),
+                new Platform(3050, 280, 80, 20),
+                new Platform(3200, 240, 100, 20),
+                new Platform(3350, 300, 80, 20),
+
+                // Final platform
+                new Platform(3550, 360, 140, 20)
+            ];
+        } else if (this.level === 5) {
+            // Platform Level 3 - Most challenging layout
+            this.platforms = [
+                // Narrow platforms, precise timing required
+                new Platform(450, 380, 60, 20),
+                new Platform(650, 320, 60, 20),
+                new Platform(850, 360, 60, 20),
+                new Platform(1050, 280, 60, 20),
+
+                // High-precision jumping section
+                new Platform(1250, 240, 80, 20),
+                new Platform(1450, 300, 60, 20),
+                new Platform(1650, 220, 80, 20),
+                new Platform(1850, 280, 60, 20),
+
+                // Expert floating section
+                new Platform(2050, 260, 100, 20),
+                new Platform(2250, 200, 80, 20),
+                new Platform(2450, 260, 100, 20),
+                new Platform(2650, 200, 80, 20),
+
+                // Final gauntlet
+                new Platform(2850, 340, 60, 20),
+                new Platform(3000, 280, 60, 20),
+                new Platform(3150, 220, 60, 20),
+                new Platform(3300, 180, 80, 20),
+                new Platform(3450, 240, 60, 20),
+
+                // Victory platform
+                new Platform(3600, 320, 120, 20)
+            ];
+        }
+
+        // Create door at the end
+        this.door = new Door(3700, 420);
+
+        // Initialize dynamic spawning system
+        this.initDynamicSpawning();
+    }
+
     initDynamicSpawning() {
-        // Initialize dynamic spawning system for level 1
+        // Initialize dynamic spawning system for all platform levels
         const monsterSprites = [
             'images/monster_sprites/evil_poop.png',
             'images/monster_sprites/cyclops_poop.png',
@@ -1387,75 +1472,207 @@ class Game extends GameState {
         // Define spawn zones for each quarter of the map
         const quarterWidth = this.levelWidth / 4;
 
-        this.spawnZones = [
-            // Quarter 1 (0-1200): Ground spawns, first spawn in middle
-            {
-                start: quarterWidth * 0.5, // Middle of first quarter
-                end: quarterWidth,
-                type: 'ground',
-                spawns: [
-                    { x: quarterWidth * 0.5, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
-                    { x: quarterWidth * 0.8, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }
-                ]
-            },
-            // Quarter 2 (1200-2400): Platform spawns on stepping stones
-            {
-                start: quarterWidth,
-                end: quarterWidth * 2,
-                type: 'platform',
-                spawns: [
-                    { x: 1250, y: 310, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 1250,350
-                    { x: 1400, y: 260, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 1400,300
-                    { x: 1700, y: 240, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 1700,280
-                    { x: 2050, y: 280, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 2050,320
-                    { x: 2200, y: 220, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }  // On platform at 2200,260
-                ]
-            },
-            // Quarter 3 (2400-3600): Ground spawns (increased density)
-            {
-                start: quarterWidth * 2,
-                end: quarterWidth * 3,
-                type: 'ground',
-                spawns: [
-                    { x: 2450, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
-                    { x: 2650, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
-                    { x: 2850, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
-                    { x: 3050, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
-                    { x: 3250, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
-                    { x: 3450, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }
-                ]
-            },
-            // Quarter 4 (3600-4800): Pyramid steps and ground mix
-            {
-                start: quarterWidth * 3,
-                end: quarterWidth * 4,
-                type: 'mixed',
-                spawns: [
-                    // Platform monsters on pyramid steps
-                    { x: 2850, y: 310, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 2850,350
-                    { x: 3000, y: 260, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 3000,300
-                    { x: 3150, y: 210, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 3150,250 (highest)
-                    { x: 3500, y: 340, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 3500,380
+        if (this.level === 1) {
+            // Platform Level 1 spawn zones
+            this.spawnZones = [
+                // Quarter 1 (0-1200): Ground spawns, first spawn in middle
+                {
+                    start: quarterWidth * 0.5, // Middle of first quarter
+                    end: quarterWidth,
+                    type: 'ground',
+                    spawns: [
+                        { x: quarterWidth * 0.5, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                        { x: quarterWidth * 0.8, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }
+                    ]
+                },
+                // Quarter 2 (1200-2400): Platform spawns on stepping stones
+                {
+                    start: quarterWidth,
+                    end: quarterWidth * 2,
+                    type: 'platform',
+                    spawns: [
+                        { x: 1250, y: 310, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 1250,350
+                        { x: 1400, y: 260, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 1400,300
+                        { x: 1700, y: 240, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 1700,280
+                        { x: 2050, y: 280, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 2050,320
+                        { x: 2200, y: 220, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }  // On platform at 2200,260
+                    ]
+                },
+                // Quarter 3 (2400-3600): Ground spawns (increased density)
+                {
+                    start: quarterWidth * 2,
+                    end: quarterWidth * 3,
+                    type: 'ground',
+                    spawns: [
+                        { x: 2450, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                        { x: 2650, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                        { x: 2850, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                        { x: 3050, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                        { x: 3250, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                        { x: 3450, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }
+                    ]
+                },
+                // Quarter 4 (3600-4800): Pyramid steps and ground mix
+                {
+                    start: quarterWidth * 3,
+                    end: quarterWidth * 4,
+                    type: 'mixed',
+                    spawns: [
+                        // Platform monsters on pyramid steps
+                        { x: 2850, y: 310, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 2850,350
+                        { x: 3000, y: 260, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 3000,300
+                        { x: 3150, y: 210, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 3150,250 (highest)
+                        { x: 3500, y: 340, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 3500,380
 
-                    // Ground monsters (can move freely under platforms)
-                    { x: 3650, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
-                    { x: 3800, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
-                    { x: 3950, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
-                    { x: 4100, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
-                    { x: 4300, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
-                    { x: 4500, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }
-                ]
-            }
-        ];
+                        // Ground monsters (can move freely under platforms)
+                        { x: 3650, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                        { x: 3800, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                        { x: 3950, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                        { x: 4100, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                        { x: 4300, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                        { x: 4500, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }
+                    ]
+                }
+            ];
+        } else if (this.level === 3) {
+            // Platform Level 2 spawn zones (more ground monsters to prevent running past)
+            this.spawnZones = [
+                // Quarter 1: Ground and early platforms
+                {
+                    start: quarterWidth * 0.3,
+                    end: quarterWidth,
+                    type: 'mixed',
+                    spawns: [
+                        { x: 500, y: 360, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 500,400
+                        { x: 700, y: 300, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 700,340
+                        { x: 600, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 800, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 1000, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] } // Ground monster
+                    ]
+                },
+                // Quarter 2: Multiple height platforms
+                {
+                    start: quarterWidth,
+                    end: quarterWidth * 2,
+                    type: 'mixed',
+                    spawns: [
+                        { x: 1300, y: 240, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 1300,280
+                        { x: 1500, y: 300, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 1500,340
+                        { x: 1700, y: 220, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 1700,260
+                        { x: 1900, y: 280, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 1900,320
+                        { x: 1200, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 1400, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 1650, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 1850, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }  // Ground monster
+                    ]
+                },
+                // Quarter 3: Floating islands
+                {
+                    start: quarterWidth * 2,
+                    end: quarterWidth * 3,
+                    type: 'mixed',
+                    spawns: [
+                        { x: 2100, y: 260, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 2100,300
+                        { x: 2300, y: 200, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 2300,240
+                        { x: 2500, y: 260, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 2500,300
+                        { x: 2200, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 2400, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 2600, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }  // Ground monster
+                    ]
+                },
+                // Quarter 4: Final ascent
+                {
+                    start: quarterWidth * 3,
+                    end: quarterWidth * 4,
+                    type: 'mixed',
+                    spawns: [
+                        { x: 2900, y: 300, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 2900,340
+                        { x: 3050, y: 240, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 3050,280
+                        { x: 3200, y: 200, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 3200,240
+                        { x: 3550, y: 320, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 3550,360
+                        { x: 2800, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 3000, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 3100, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 3300, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 3400, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 3600, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }  // Ground monster
+                    ]
+                }
+            ];
+        } else if (this.level === 5) {
+            // Platform Level 3 spawn zones (expert level with more ground monsters)
+            this.spawnZones = [
+                // Quarter 1: Narrow platforms
+                {
+                    start: quarterWidth * 0.3,
+                    end: quarterWidth,
+                    type: 'mixed',
+                    spawns: [
+                        { x: 650, y: 280, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 650,320
+                        { x: 850, y: 320, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 850,360
+                        { x: 550, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 750, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 950, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }  // Ground monster
+                    ]
+                },
+                // Quarter 2: High-precision platforms
+                {
+                    start: quarterWidth,
+                    end: quarterWidth * 2,
+                    type: 'mixed',
+                    spawns: [
+                        { x: 1250, y: 200, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 1250,240
+                        { x: 1650, y: 180, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 1650,220
+                        { x: 1850, y: 240, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 1850,280
+                        { x: 1200, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 1400, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 1600, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 1800, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }  // Ground monster
+                    ]
+                },
+                // Quarter 3: Expert floating section
+                {
+                    start: quarterWidth * 2,
+                    end: quarterWidth * 3,
+                    type: 'mixed',
+                    spawns: [
+                        { x: 2050, y: 220, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 2050,260
+                        { x: 2450, y: 220, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 2450,260
+                        { x: 2650, y: 160, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 2650,200
+                        { x: 2100, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 2300, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 2500, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 2700, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }  // Ground monster
+                    ]
+                },
+                // Quarter 4: Final expert gauntlet
+                {
+                    start: quarterWidth * 3,
+                    end: quarterWidth * 4,
+                    type: 'mixed',
+                    spawns: [
+                        { x: 3000, y: 240, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 3000,280
+                        { x: 3300, y: 140, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 3300,180
+                        { x: 3600, y: 280, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 3600,320
+                        { x: 2900, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 3100, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 3200, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 3400, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 3500, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // Ground monster
+                        { x: 3700, y: 450, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }  // Ground monster
+                    ]
+                }
+            ];
+        }
 
         // Track which spawns have been triggered
         this.spawnedMonsters = new Set();
 
-        console.log('Dynamic spawning initialized with', this.spawnZones.length, 'zones');
+        console.log(`Dynamic spawning initialized for level ${this.level} with`, this.spawnZones.length, 'zones');
     }
 
     checkDynamicSpawning() {
-        if (this.level !== 1 || !this.player) return;
+        if ((this.level !== 1 && this.level !== 3 && this.level !== 5) || !this.player) return;
 
         // Calculate spawn trigger distance (when spawn point becomes visible)
         const spawnDistance = this.canvas.width + 100; // Spawn when just off-screen
@@ -1469,8 +1686,15 @@ class Game extends GameState {
                 if (!this.spawnedMonsters.has(spawnKey) &&
                     Math.abs(playerX - spawn.x) < spawnDistance) {
 
-                    // Spawn the monster
-                    const monster = new Monster(spawn.x, spawn.y, spawn.sprite);
+                    // Spawn the monster with level-appropriate speed multiplier
+                    let speedMultiplier = 1;
+                    if (this.level === 3) {
+                        speedMultiplier = 1.1; // Platform Level 2: +10% speed
+                    } else if (this.level === 5) {
+                        speedMultiplier = 1.2; // Platform Level 3: +20% speed
+                    }
+
+                    const monster = new Monster(spawn.x, spawn.y, spawn.sprite, speedMultiplier);
                     this.monsters.push(monster);
                     this.spawnedMonsters.add(spawnKey);
 
@@ -1504,8 +1728,8 @@ class Game extends GameState {
     update() {
         if (this.currentScreen !== 'gameScreen' || !this.gameRunning) return;
 
-        // Update camera with smooth following (only for scrolling levels)
-        if (this.level === 1) {
+        // Update camera with smooth following (only for platform levels)
+        if (this.level === 1 || this.level === 3 || this.level === 5) {
             this.camera.x += (this.camera.targetX - this.camera.x) * this.camera.smoothing;
             this.camera.y += (this.camera.targetY - this.camera.y) * this.camera.smoothing;
 
@@ -1522,14 +1746,14 @@ class Game extends GameState {
             this.player.update(this);
         }
 
-        // Check dynamic spawning for level 1
-        if (this.level === 1) {
+        // Check dynamic spawning for platform levels
+        if (this.level === 1 || this.level === 3 || this.level === 5) {
             this.checkDynamicSpawning();
         }
 
-        // Check door collision for level 1
-        if (this.level === 1 && this.door && this.player && this.player.collidesWith(this.door)) {
-            console.log('Player reached the door! Level complete!');
+        // Check door collision for platform levels
+        if ((this.level === 1 || this.level === 3 || this.level === 5) && this.door && this.player && this.player.collidesWith(this.door)) {
+            console.log('Player reached the door! Platform level complete!');
             this.levelComplete();
             return;
         }
@@ -1610,9 +1834,9 @@ class Game extends GameState {
             return inBounds;
         });
 
-        // Check level completion (different logic for level 1)
-        if (this.level === 1) {
-            // Level 1 is completed by reaching the door (already handled above)
+        // Check level completion (different logic for platform levels)
+        if (this.level === 1 || this.level === 3 || this.level === 5) {
+            // Platform levels are completed by reaching the door (already handled above)
             // No need to kill all monsters
         } else if (this.monsters.length === 0 && this.bosses.length === 0 && !this.currentBoss) {
             // Special handling for tutorial level
@@ -1642,10 +1866,20 @@ class Game extends GameState {
         // Clear canvas with level-appropriate background
         let bgColor;
         if (this.level === 0) {
-            // Tutorial level - special green background
-            bgColor = '#87CEEB'; // Sky blue for tutorial
+            // Tutorial level - special sky blue background
+            bgColor = '#87CEEB';
+        } else if (this.level === 1) {
+            // Platform Level 1 - Light blue sky (different from brown ground)
+            bgColor = '#87CEEB';
+        } else if (this.level === 3) {
+            // Platform Level 2 - Dark Green
+            bgColor = '#228B22';
+        } else if (this.level === 5) {
+            // Platform Level 3 - Dark Purple
+            bgColor = '#4B0082';
         } else {
-            bgColor = this.levelColors[(this.level - 1) % this.levelColors.length];
+            // Boss levels - Dark red/maroon
+            bgColor = '#800000';
         }
         this.ctx.fillStyle = bgColor;
         this.ctx.fillRect(this.camera.x, this.camera.y, this.canvas.width, this.canvas.height);
@@ -1696,8 +1930,8 @@ class Game extends GameState {
         this.ctx.restore();
 
         // Draw UI elements (not affected by camera)
-        if (this.level === 1 && this.player) {
-            // Draw progress indicator for level 1 only
+        if ((this.level === 1 || this.level === 3 || this.level === 5) && this.player) {
+            // Draw progress indicator for platform levels
             const progressWidth = 200;
             const progressHeight = 10;
             const progressX = 10;
@@ -1712,10 +1946,14 @@ class Game extends GameState {
             this.ctx.fillStyle = '#00FF00';
             this.ctx.fillRect(progressX, progressY, progressWidth * progress, progressHeight);
 
-            // Text
+            // Text with level info
             this.ctx.fillStyle = '#FFFFFF';
             this.ctx.font = '12px Arial';
-            this.ctx.fillText('Progress to Exit', progressX, progressY + progressHeight + 15);
+            let levelName = '';
+            if (this.level === 1) levelName = 'Platform 1';
+            else if (this.level === 3) levelName = 'Platform 2';
+            else if (this.level === 5) levelName = 'Platform 3';
+            this.ctx.fillText(`${levelName} - Progress to Exit`, progressX, progressY + progressHeight + 15);
         }
     }
 
@@ -1727,9 +1965,23 @@ class Game extends GameState {
             document.getElementById('bossImage').src = 'images/monster_sprites/unidentified_poop_helper_boss.png';
             document.getElementById('dialogueText').textContent = "Excellent work! You've mastered the basics. Now the real adventure begins. Good luck out there!";
             this.showScreen('bossDialogue');
-        } else if (this.level <= 4) {
+        } else if (this.level === 2 || this.level === 4 || this.level === 6) {
+            // Boss levels - show boss dialogue
             this.showBossDialogue();
-        } else {
+        } else if (this.level === 3 || this.level === 5) {
+            // Platform levels - start directly
+            console.log(`Starting Platform Level ${this.level === 3 ? '2' : '3'} directly`);
+            this.initLevel();
+            this.gameRunning = true;
+            this.showScreen('gameScreen');
+
+            // Ensure game loop is running
+            if (this.gameRunning && !this.gameLoopRunning) {
+                console.log('Starting game loop for platform level');
+                this.gameLoopRunning = true;
+                this.gameLoop();
+            }
+        } else if (this.level > 6) {
             this.gameWin();
         }
     }
@@ -1746,13 +1998,13 @@ class Game extends GameState {
                 this.currentBoss = new PooFairyBoss(600, 300);
                 console.log('Created Poo Fairy Boss:', this.currentBoss);
                 break;
-            case 3:
+            case 4:
                 bossImage = 'images/monster_sprites/poop_t-shirt_boss.png';
                 dialogueText = "Prepare for my t-shirt cannon! You cannot escape my fashionable fury!";
                 this.currentBoss = new PoopTShirtBoss(600, 300);
                 console.log('Created Poop T-Shirt Boss:', this.currentBoss);
                 break;
-            case 4:
+            case 6:
                 bossImage = 'images/monster_sprites/unidentified_poop_helper_boss.png';
                 dialogueText = "Foolish human! I was never here to help! I planned this poop apocalypse all along! Now face my army of minions!";
                 this.currentBoss = new UnidentifiedHelperBoss(600, 300);
