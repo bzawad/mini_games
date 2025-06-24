@@ -671,7 +671,7 @@ class PoopTShirtBoss extends Boss {
 
         if (this.attackCooldown <= 0) {
             this.shootTShirt(game);
-            this.attackCooldown = 135; // 2.25 seconds (reduced shooting rate by about a third)
+            this.attackCooldown = 200; // 2.25 seconds (reduced shooting rate by about a third)
         }
         this.attackCooldown--;
     }
