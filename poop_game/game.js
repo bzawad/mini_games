@@ -174,6 +174,40 @@ class Player extends GameObject {
         // Gravity
         this.dy += 0.8;
 
+        // Store old position for collision detection
+        const oldX = this.x;
+        const oldY = this.y;
+
+        // Update position
+        super.update();
+
+        // Platform collision detection
+        this.onGround = false;
+        for (let platform of game.platforms) {
+            if (this.collidesWith(platform)) {
+                // Vertical collision (landing on platform)
+                if (oldY + this.height <= platform.y && this.dy > 0) {
+                    this.y = platform.y - this.height;
+                    this.dy = 0;
+                    this.onGround = true;
+                }
+                // Horizontal collision (hitting platform side)
+                else if (oldX + this.width <= platform.x && this.dx > 0) {
+                    this.x = platform.x - this.width;
+                    this.dx = 0;
+                }
+                else if (oldX >= platform.x + platform.width && this.dx < 0) {
+                    this.x = platform.x + platform.width;
+                    this.dx = 0;
+                }
+                // Bottom collision (hitting platform from below)
+                else if (oldY >= platform.y + platform.height && this.dy < 0) {
+                    this.y = platform.y + platform.height;
+                    this.dy = 0;
+                }
+            }
+        }
+
         // Ground collision
         if (this.y + this.height > 500) {
             this.y = 500 - this.height;
@@ -181,12 +215,20 @@ class Player extends GameObject {
             this.onGround = true;
         }
 
-        // Keep player in bounds
+        // Keep player in level bounds (for scrolling levels)
         if (this.x < 0) this.x = 0;
-        if (this.x + this.width > 1200) this.x = 1200 - this.width;
+        if (this.x + this.width > game.levelWidth) this.x = game.levelWidth - this.width;
 
-        // Update position
-        super.update();
+        // Update camera to follow player (only for scrolling levels)
+        if (game.level === 1) {
+            // Only level 1 is a scrolling level
+            game.camera.targetX = this.x - game.canvas.width / 2;
+            game.camera.targetY = 0; // Keep camera at same height
+        } else {
+            // For boss levels and other levels, keep camera stationary
+            game.camera.targetX = 0;
+            game.camera.targetY = 0;
+        }
 
         // Update cooldowns
         if (this.shootCooldown > 0) this.shootCooldown--;
@@ -290,11 +332,17 @@ class Monster extends GameObject {
         this.health = 2;
         this.maxHealth = 2;
         this.hitFlash = 0; // For visual feedback when hit
+        this.isOnPlatform = false;
+        this.currentPlatform = null;
     }
 
     update(game) {
-        if (this.chasePlayer && game.player) {
-            // Simple AI to chase player
+        // Store old position for collision detection
+        const oldX = this.x;
+        const oldY = this.y;
+
+        if (this.chasePlayer && game.player && !this.isOnPlatform) {
+            // Only chase player when NOT on a platform (to avoid falling off)
             const dx = game.player.x - this.x;
             if (Math.abs(dx) > 5) {
                 this.dx = dx > 0 ? this.speed : -this.speed;
@@ -302,20 +350,63 @@ class Monster extends GameObject {
                 this.dx = 0;
             }
         } else {
-            this.dx = this.direction * this.speed;
+            // Platform patrol behavior or ground wandering
+            const desiredDx = this.direction * this.speed;
+            if (this.isOnPlatform && this.wouldFallOffPlatform(game, desiredDx)) {
+                this.direction *= -1; // Turn around at platform edge
+            }
+            this.dx = this.direction * this.speed; // Always keep moving
         }
 
         // Gravity
         this.dy += 0.5;
 
+        // Update position
+        super.update();
+
+        // Platform collision detection
+        this.onGround = false;
+        this.isOnPlatform = false;
+        this.currentPlatform = null;
+
+        for (let platform of game.platforms) {
+            if (this.collidesWith(platform)) {
+                // Vertical collision (landing on platform)
+                if (oldY + this.height <= platform.y && this.dy > 0) {
+                    this.y = platform.y - this.height;
+                    this.dy = 0;
+                    this.onGround = true;
+                    this.isOnPlatform = true;
+                    this.currentPlatform = platform;
+                }
+                // Horizontal collision (hitting platform side)
+                else if (oldX + this.width <= platform.x && this.dx > 0) {
+                    this.x = platform.x - this.width;
+                    this.direction *= -1;
+                    this.dx = this.direction * this.speed;
+                }
+                else if (oldX >= platform.x + platform.width && this.dx < 0) {
+                    this.x = platform.x + platform.width;
+                    this.direction *= -1;
+                    this.dx = this.direction * this.speed;
+                }
+                // Bottom collision (hitting platform from below)
+                else if (oldY >= platform.y + platform.height && this.dy < 0) {
+                    this.y = platform.y + platform.height;
+                    this.dy = 0;
+                }
+            }
+        }
+
         // Ground collision
         if (this.y + this.height > 500) {
             this.y = 500 - this.height;
             this.dy = 0;
+            this.onGround = true;
         }
 
-        // Boundary bouncing
-        if (this.x <= 0 || this.x + this.width >= 1200) {
+        // Boundary bouncing (adjust for level width)
+        if (this.x <= 0 || this.x + this.width >= game.levelWidth) {
             this.direction *= -1;
         }
 
@@ -323,8 +414,17 @@ class Monster extends GameObject {
         if (this.hitFlash > 0) {
             this.hitFlash--;
         }
+    }
 
-        super.update();
+    wouldFallOffPlatform(game, desiredDx) {
+        if (!this.isOnPlatform || !this.currentPlatform) return false;
+
+        const futureX = this.x + desiredDx;
+        const platform = this.currentPlatform;
+
+        // Check if monster would step off the platform (with small buffer for safety)
+        const buffer = 2;
+        return (futureX < platform.x + buffer || futureX + this.width > platform.x + platform.width - buffer);
     }
 
     takeDamage(game) {
@@ -726,7 +826,7 @@ class Laser extends GameObject {
 
     update() {
         super.update();
-        return this.x > 0 && this.x < 1200; // Return false if out of bounds
+        return this.x > -50 && this.x < 5000; // Extended bounds for scrolling levels
     }
 
     draw(ctx) {
@@ -855,6 +955,52 @@ class TShirtProjectile extends GameObject {
     }
 }
 
+// Platform class for jumping obstacles
+class Platform extends GameObject {
+    constructor(x, y, width, height) {
+        super(x, y, width, height);
+        this.type = 'platform';
+    }
+
+    draw(ctx) {
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+
+        // Add some visual detail
+        ctx.fillStyle = '#654321';
+        ctx.fillRect(this.x, this.y, this.width, 5);
+    }
+}
+
+// Door class for level exit
+class Door extends GameObject {
+    constructor(x, y) {
+        super(x, y, 40, 80);
+        this.type = 'door';
+        this.reached = false;
+    }
+
+    draw(ctx) {
+        // Draw door frame
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+
+        // Draw door
+        ctx.fillStyle = '#654321';
+        ctx.fillRect(this.x + 5, this.y + 5, this.width - 10, this.height - 10);
+
+        // Draw door handle
+        ctx.fillStyle = '#FFD700';
+        ctx.fillRect(this.x + this.width - 15, this.y + this.height / 2 - 3, 8, 6);
+
+        // Add "EXIT" text
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('EXIT', this.x + this.width / 2, this.y - 5);
+    }
+}
+
 // Main Game Class
 class Game extends GameState {
     constructor() {
@@ -873,6 +1019,24 @@ class Game extends GameState {
             '#FFB6C1', // Light pink
             '#98FB98'  // Pale green
         ];
+
+        // Camera system for scrolling levels
+        this.camera = {
+            x: 0,
+            y: 0,
+            targetX: 0,
+            targetY: 0,
+            smoothing: 0.1
+        };
+
+        // Level configuration
+        this.levelWidth = 1200; // Default level width (screen width)
+        this.levelHeight = 600; // Default level height (screen height)
+        this.door = null; // Exit door for scrolling levels
+
+        // Dynamic spawning system
+        this.spawnZones = [];
+        this.spawnedMonsters = new Set();
 
         // Background music
         this.backgroundMusic = document.getElementById('backgroundMusic');
@@ -1097,12 +1261,21 @@ class Game extends GameState {
 
     initLevel() {
         console.log('Initializing level', this.level);
-        this.player = new Player(100, 400);
+
+        // Clear all level elements
         this.monsters = [];
         this.bosses = [];
         this.lasers = [];
         this.projectiles = [];
+        this.platforms = [];
+        this.door = null;
         this.currentBoss = null;
+
+        // Reset camera completely
+        this.camera.x = 0;
+        this.camera.y = 0;
+        this.camera.targetX = 0;
+        this.camera.targetY = 0;
 
         // Reset tutorial flag
         if (this.level === 0) {
@@ -1111,10 +1284,63 @@ class Game extends GameState {
 
         if (this.level === 0) {
             // Tutorial level - create helper character but don't spawn monsters yet
+            this.player = new Player(100, 400);
             this.tutorialHelper = new TutorialHelper(900, 300);
+            this.levelWidth = 1200; // Standard level width for tutorial
             console.log('Tutorial helper created');
+        } else if (this.level === 1) {
+            // Level 1 - Side-scrolling platform level
+            this.player = new Player(100, 400); // Start at beginning
+            this.levelWidth = 1200 * 4; // 4 times screen width
+
+            // Create platforms with progressive difficulty (reachable heights)
+            this.platforms = [
+                // Starting platforms - easily reachable
+                new Platform(400, 420, 100, 20),  // 80px jump
+                new Platform(600, 380, 100, 20),  // 120px jump
+                new Platform(750, 420, 80, 20),   // Step back down
+                new Platform(900, 360, 100, 20),  // 140px jump (max reachable)
+
+                // Middle section - stepping stone progression
+                new Platform(1100, 400, 80, 20),  // Step down
+                new Platform(1250, 350, 100, 20), // Step up
+                new Platform(1400, 300, 80, 20),  // Higher step
+                new Platform(1550, 350, 100, 20), // Step down for safety
+                new Platform(1700, 280, 100, 20), // High platform
+
+                // Bowl-inspired floating section with steps
+                new Platform(1900, 380, 100, 20), // Low entry
+                new Platform(2050, 320, 80, 20),  // Mid step
+                new Platform(2200, 260, 120, 20), // High center
+                new Platform(2350, 320, 80, 20),  // Mid step down
+                new Platform(2500, 380, 100, 20), // Low exit
+
+                // Final pyramid-inspired section with stepping stones
+                new Platform(2700, 400, 100, 20), // Base step
+                new Platform(2850, 350, 100, 20), // Second step
+                new Platform(3000, 300, 100, 20), // Third step
+                new Platform(3150, 250, 100, 20), // Fourth step (highest)
+                new Platform(3300, 300, 100, 20), // Step down
+
+                // Final approach to door
+                new Platform(3500, 380, 150, 20)
+            ];
+
+            // Create door at the end
+            this.door = new Door(3700, 420);
+
+            // Initialize dynamic spawning system for level 1
+            this.initDynamicSpawning();
+
+            console.log('Level 1 side-scrolling level created with', this.platforms.length, 'platforms and dynamic spawning');
         } else {
-            // Normal levels - spawn monsters based on level
+            // Boss levels (2, 3, 4) and other levels - NO SCROLLING, NO PLATFORMS
+            this.player = new Player(100, 400); // Always start at beginning position
+            this.levelWidth = 1200; // Standard level width
+
+            // NO platforms for boss levels
+            // NO door for boss levels
+
             const monsterSprites = [
                 'images/monster_sprites/evil_poop.png',
                 'images/monster_sprites/cyclops_poop.png',
@@ -1124,21 +1350,134 @@ class Game extends GameState {
                 'images/monster_sprites/melting_poop.png'
             ];
 
-            for (let i = 0; i < 3 + this.level; i++) {
-                const sprite = monsterSprites[Math.floor(Math.random() * monsterSprites.length)];
-                const monster = new Monster(
-                    200 + Math.random() * 800,
-                    300 + Math.random() * 100,
-                    sprite
-                );
-                this.monsters.push(monster);
+            // Only spawn regular monsters for non-boss levels (level 5+)
+            if (this.level > 4) {
+                for (let i = 0; i < 3 + this.level; i++) {
+                    const sprite = monsterSprites[Math.floor(Math.random() * monsterSprites.length)];
+                    const monster = new Monster(
+                        200 + Math.random() * 800,
+                        300 + Math.random() * 100,
+                        sprite
+                    );
+                    this.monsters.push(monster);
+                }
             }
+
+            console.log('Boss/Standard level initialized - Level width:', this.levelWidth, 'Platforms:', this.platforms.length);
         }
 
         console.log('Player created at:', this.player.x, this.player.y);
         console.log('Monsters created:', this.monsters.length);
+        console.log('Camera reset to:', this.camera.x, this.camera.y);
 
         this.updateUI();
+    }
+
+    initDynamicSpawning() {
+        // Initialize dynamic spawning system for level 1
+        const monsterSprites = [
+            'images/monster_sprites/evil_poop.png',
+            'images/monster_sprites/cyclops_poop.png',
+            'images/monster_sprites/hot_poop.png',
+            'images/monster_sprites/radioactive_poop.png',
+            'images/monster_sprites/robopoop.png',
+            'images/monster_sprites/melting_poop.png'
+        ];
+
+        // Define spawn zones for each quarter of the map
+        const quarterWidth = this.levelWidth / 4;
+
+        this.spawnZones = [
+            // Quarter 1 (0-1200): Ground spawns, first spawn in middle
+            {
+                start: quarterWidth * 0.5, // Middle of first quarter
+                end: quarterWidth,
+                type: 'ground',
+                spawns: [
+                    { x: quarterWidth * 0.5, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                    { x: quarterWidth * 0.8, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }
+                ]
+            },
+            // Quarter 2 (1200-2400): Platform spawns on stepping stones
+            {
+                start: quarterWidth,
+                end: quarterWidth * 2,
+                type: 'platform',
+                spawns: [
+                    { x: 1250, y: 310, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 1250,350
+                    { x: 1400, y: 260, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 1400,300
+                    { x: 1700, y: 240, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 1700,280
+                    { x: 2050, y: 280, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 2050,320
+                    { x: 2200, y: 220, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }  // On platform at 2200,260
+                ]
+            },
+            // Quarter 3 (2400-3600): Ground spawns (increased density)
+            {
+                start: quarterWidth * 2,
+                end: quarterWidth * 3,
+                type: 'ground',
+                spawns: [
+                    { x: 2450, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                    { x: 2650, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                    { x: 2850, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                    { x: 3050, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                    { x: 3250, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                    { x: 3450, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }
+                ]
+            },
+            // Quarter 4 (3600-4800): Pyramid steps and ground mix
+            {
+                start: quarterWidth * 3,
+                end: quarterWidth * 4,
+                type: 'mixed',
+                spawns: [
+                    // Platform monsters on pyramid steps
+                    { x: 2850, y: 310, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 2850,350
+                    { x: 3000, y: 260, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 3000,300
+                    { x: 3150, y: 210, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 3150,250 (highest)
+                    { x: 3500, y: 340, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }, // On platform at 3500,380
+
+                    // Ground monsters (can move freely under platforms)
+                    { x: 3650, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                    { x: 3800, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                    { x: 3950, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                    { x: 4100, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                    { x: 4300, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] },
+                    { x: 4500, y: 400, sprite: monsterSprites[Math.floor(Math.random() * monsterSprites.length)] }
+                ]
+            }
+        ];
+
+        // Track which spawns have been triggered
+        this.spawnedMonsters = new Set();
+
+        console.log('Dynamic spawning initialized with', this.spawnZones.length, 'zones');
+    }
+
+    checkDynamicSpawning() {
+        if (this.level !== 1 || !this.player) return;
+
+        // Calculate spawn trigger distance (when spawn point becomes visible)
+        const spawnDistance = this.canvas.width + 100; // Spawn when just off-screen
+        const playerX = this.player.x;
+
+        this.spawnZones.forEach((zone, zoneIndex) => {
+            zone.spawns.forEach((spawn, spawnIndex) => {
+                const spawnKey = `${zoneIndex}-${spawnIndex}`;
+
+                // Check if this spawn hasn't been triggered yet and player is close enough
+                if (!this.spawnedMonsters.has(spawnKey) &&
+                    Math.abs(playerX - spawn.x) < spawnDistance) {
+
+                    // Spawn the monster
+                    const monster = new Monster(spawn.x, spawn.y, spawn.sprite);
+                    this.monsters.push(monster);
+                    this.spawnedMonsters.add(spawnKey);
+
+                    console.log(`Spawned monster in zone ${zoneIndex + 1} (${zone.type}) at`, spawn.x, spawn.y);
+                }
+            });
+        });
     }
 
     updateUI() {
@@ -1165,9 +1504,34 @@ class Game extends GameState {
     update() {
         if (this.currentScreen !== 'gameScreen' || !this.gameRunning) return;
 
+        // Update camera with smooth following (only for scrolling levels)
+        if (this.level === 1) {
+            this.camera.x += (this.camera.targetX - this.camera.x) * this.camera.smoothing;
+            this.camera.y += (this.camera.targetY - this.camera.y) * this.camera.smoothing;
+
+            // Keep camera within level bounds
+            this.camera.x = Math.max(0, Math.min(this.camera.x, this.levelWidth - this.canvas.width));
+        } else {
+            // For boss levels and other levels, keep camera at origin
+            this.camera.x = 0;
+            this.camera.y = 0;
+        }
+
         // Update player
         if (this.player) {
             this.player.update(this);
+        }
+
+        // Check dynamic spawning for level 1
+        if (this.level === 1) {
+            this.checkDynamicSpawning();
+        }
+
+        // Check door collision for level 1
+        if (this.level === 1 && this.door && this.player && this.player.collidesWith(this.door)) {
+            console.log('Player reached the door! Level complete!');
+            this.levelComplete();
+            return;
         }
 
         // Update monsters
@@ -1246,8 +1610,11 @@ class Game extends GameState {
             return inBounds;
         });
 
-        // Check level completion
-        if (this.monsters.length === 0 && this.bosses.length === 0 && !this.currentBoss) {
+        // Check level completion (different logic for level 1)
+        if (this.level === 1) {
+            // Level 1 is completed by reaching the door (already handled above)
+            // No need to kill all monsters
+        } else if (this.monsters.length === 0 && this.bosses.length === 0 && !this.currentBoss) {
             // Special handling for tutorial level
             if (this.level === 0) {
                 // Only complete tutorial if we've spawned monsters and defeated them
@@ -1266,6 +1633,12 @@ class Game extends GameState {
     draw() {
         if (this.currentScreen !== 'gameScreen' || !this.gameRunning) return;
 
+        // Save the current transformation matrix
+        this.ctx.save();
+
+        // Apply camera transformation
+        this.ctx.translate(-this.camera.x, -this.camera.y);
+
         // Clear canvas with level-appropriate background
         let bgColor;
         if (this.level === 0) {
@@ -1275,11 +1648,21 @@ class Game extends GameState {
             bgColor = this.levelColors[(this.level - 1) % this.levelColors.length];
         }
         this.ctx.fillStyle = bgColor;
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.fillRect(this.camera.x, this.camera.y, this.canvas.width, this.canvas.height);
 
-        // Draw ground
+        // Draw ground (extend across the entire level width)
         this.ctx.fillStyle = '#8B4513';
-        this.ctx.fillRect(0, 500, this.canvas.width, 100);
+        this.ctx.fillRect(0, 500, this.levelWidth, 100);
+
+        // Draw platforms
+        this.platforms.forEach(platform => {
+            platform.draw(this.ctx);
+        });
+
+        // Draw door if it exists
+        if (this.door) {
+            this.door.draw(this.ctx);
+        }
 
         // Draw game objects
         if (this.player) {
@@ -1308,6 +1691,32 @@ class Game extends GameState {
 
         this.lasers.forEach(laser => laser.draw(this.ctx));
         this.projectiles.forEach(projectile => projectile.draw(this.ctx));
+
+        // Restore the transformation matrix
+        this.ctx.restore();
+
+        // Draw UI elements (not affected by camera)
+        if (this.level === 1 && this.player) {
+            // Draw progress indicator for level 1 only
+            const progressWidth = 200;
+            const progressHeight = 10;
+            const progressX = 10;
+            const progressY = 10;
+
+            // Background
+            this.ctx.fillStyle = '#666666';
+            this.ctx.fillRect(progressX, progressY, progressWidth, progressHeight);
+
+            // Progress bar
+            const progress = Math.min(this.player.x / (this.levelWidth - this.canvas.width), 1);
+            this.ctx.fillStyle = '#00FF00';
+            this.ctx.fillRect(progressX, progressY, progressWidth * progress, progressHeight);
+
+            // Text
+            this.ctx.fillStyle = '#FFFFFF';
+            this.ctx.font = '12px Arial';
+            this.ctx.fillText('Progress to Exit', progressX, progressY + progressHeight + 15);
+        }
     }
 
     levelComplete() {
@@ -1372,9 +1781,19 @@ class Game extends GameState {
             return;
         }
 
-        // Set up boss battle
-        this.bosses = [this.currentBoss];
+        // Store the boss temporarily
+        const boss = this.currentBoss;
         this.currentBoss = null;
+
+        // Initialize the level properly (this will reset player position, clear platforms, etc.)
+        this.initLevel();
+
+        // Now set up the boss battle
+        this.bosses = [boss];
+
+        console.log('Boss battle initialized - Player at:', this.player ? this.player.x + ',' + this.player.y : 'no player');
+        console.log('Platforms cleared:', this.platforms.length);
+        console.log('Camera reset to:', this.camera.x + ',' + this.camera.y);
 
         // Restart game loop
         this.gameRunning = true;
