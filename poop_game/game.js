@@ -692,7 +692,7 @@ class PoopTShirtBoss extends Boss {
 
 class UnidentifiedHelperBoss extends Boss {
     constructor(x, y) {
-        super(x, y, 'images/monster_sprites/unidentified_poop_helper_boss.png', 30);
+        super(x, y, 'images/monster_sprites/unidentified_poop_helper_boss.png', 60);
         this.name = 'Unidentified Poop Helper Boss';
         this.revealed = false;
     }
@@ -702,7 +702,7 @@ class UnidentifiedHelperBoss extends Boss {
 
         if (this.attackCooldown <= 0) {
             this.spawnMinion(game);
-            this.attackCooldown = 240; // 4 seconds
+            this.attackCooldown = 160; // 2.67 seconds (1.5x faster than 4 seconds)
         }
         this.attackCooldown--;
     }
@@ -710,9 +710,18 @@ class UnidentifiedHelperBoss extends Boss {
     spawnMinion(game) {
         const minionSprites = [
             'images/monster_sprites/evil_poop.png',
+            'images/monster_sprites/cyclops_poop.png',
             'images/monster_sprites/hot_poop.png',
             'images/monster_sprites/radioactive_poop.png',
-            'images/monster_sprites/robopoop.png'
+            'images/monster_sprites/robopoop.png',
+            'images/monster_sprites/melting_poop.png',
+            'images/monster_sprites/bag_of_poop.png',
+            'images/monster_sprites/dead_poop.png',
+            'images/monster_sprites/octopoop.png',
+            'images/monster_sprites/pixel_poop.png',
+            'images/monster_sprites/swearing_poop.png',
+            'images/monster_sprites/poopman.png',
+            'images/monster_sprites/fancy_poop.png'
         ];
 
         const sprite = minionSprites[Math.floor(Math.random() * minionSprites.length)];
@@ -789,7 +798,18 @@ class TutorialHelper extends GameObject {
         // Spawn just 2 easy monsters for tutorial
         const tutorialSprites = [
             'images/monster_sprites/evil_poop.png',
-            'images/monster_sprites/cyclops_poop.png'
+            'images/monster_sprites/cyclops_poop.png',
+            'images/monster_sprites/hot_poop.png',
+            'images/monster_sprites/radioactive_poop.png',
+            'images/monster_sprites/robopoop.png',
+            'images/monster_sprites/melting_poop.png',
+            'images/monster_sprites/bag_of_poop.png',
+            'images/monster_sprites/dead_poop.png',
+            'images/monster_sprites/octopoop.png',
+            'images/monster_sprites/pixel_poop.png',
+            'images/monster_sprites/swearing_poop.png',
+            'images/monster_sprites/poopman.png',
+            'images/monster_sprites/fancy_poop.png'
         ];
 
         console.log('Spawning tutorial monsters...');
@@ -1336,7 +1356,14 @@ class Game extends GameState {
                 'images/monster_sprites/hot_poop.png',
                 'images/monster_sprites/radioactive_poop.png',
                 'images/monster_sprites/robopoop.png',
-                'images/monster_sprites/melting_poop.png'
+                'images/monster_sprites/melting_poop.png',
+                'images/monster_sprites/bag_of_poop.png',
+                'images/monster_sprites/dead_poop.png',
+                'images/monster_sprites/octopoop.png',
+                'images/monster_sprites/pixel_poop.png',
+                'images/monster_sprites/swearing_poop.png',
+                'images/monster_sprites/poopman.png',
+                'images/monster_sprites/fancy_poop.png'
             ];
 
             // Only spawn regular monsters for non-boss levels (level 7+)
@@ -1475,7 +1502,14 @@ class Game extends GameState {
             'images/monster_sprites/hot_poop.png',
             'images/monster_sprites/radioactive_poop.png',
             'images/monster_sprites/robopoop.png',
-            'images/monster_sprites/melting_poop.png'
+            'images/monster_sprites/melting_poop.png',
+            'images/monster_sprites/bag_of_poop.png',
+            'images/monster_sprites/dead_poop.png',
+            'images/monster_sprites/octopoop.png',
+            'images/monster_sprites/pixel_poop.png',
+            'images/monster_sprites/swearing_poop.png',
+            'images/monster_sprites/poopman.png',
+            'images/monster_sprites/fancy_poop.png'
         ];
 
         // Define spawn zones for each quarter of the map
