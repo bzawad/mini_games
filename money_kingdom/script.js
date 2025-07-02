@@ -9,7 +9,8 @@ let gameState = {
     moneyGuyClicks: 0,
     gameArea: null,
     isPaused: false,
-    jumpscareTriggered: false
+    jumpscareTriggered: false,
+    musicWasPlaying: false
 };
 
 // Item definitions
@@ -30,7 +31,7 @@ const phases = {
             { type: 'greenBunny', x: 70, y: 20, size: 70 },
             { type: 'greenBunny', x: 15, y: 70, size: 70 },
             { type: 'greenBunny', x: 75, y: 75, size: 70 },
-            { type: 'tshirt', x: 45, y: 50, size: 90 }
+            { type: 'tshirt', x: 65, y: 50, size: 90 }
         ],
         moneyGuy: { x: 50, y: 40, size: 100 }
     },
@@ -43,7 +44,7 @@ const phases = {
             { type: 'greenBunny', x: 75, y: 15, size: 70 },
             { type: 'greenBunny', x: 20, y: 75, size: 70 },
             { type: 'greenBunny', x: 70, y: 80, size: 70 },
-            { type: 'tshirt', x: 50, y: 45, size: 90 }
+            { type: 'tshirt', x: 25, y: 45, size: 90 }
         ],
         moneyGuy: { x: 45, y: 35, size: 100 }
     },
@@ -56,7 +57,7 @@ const phases = {
             { type: 'greenBunny', x: 80, y: 25, size: 70 },
             { type: 'greenBunny', x: 25, y: 80, size: 70 },
             { type: 'greenBunny', x: 65, y: 70, size: 70 },
-            { type: 'tshirt', x: 55, y: 40, size: 90 }
+            { type: 'tshirt', x: 65, y: 40, size: 90 }
         ],
         moneyGuy: { x: 40, y: 30, size: 100 }
     }
@@ -416,11 +417,22 @@ function togglePause() {
 function pauseGame() {
     gameState.isPaused = true;
     showScreen('pauseScreen');
+    // Pause background music if playing
+    if (backgroundMusic && !backgroundMusic.paused) {
+        backgroundMusic.pause();
+        gameState.musicWasPlaying = true;
+    } else {
+        gameState.musicWasPlaying = false;
+    }
 }
 
 function resumeGame() {
     gameState.isPaused = false;
     showScreen('gameScreen');
+    // Resume background music if it was playing
+    if (backgroundMusic && gameState.musicWasPlaying) {
+        backgroundMusic.play();
+    }
 }
 
 function quitToMenu() {
@@ -437,7 +449,7 @@ function animateMoneyBills(imageList, count = 12) {
         img.style.position = 'fixed';
         img.style.left = Math.random() * 80 + 10 + 'vw';
         img.style.top = '-10vh';
-        img.style.width = '120px';
+        img.style.width = '160px';
         img.style.height = 'auto';
         img.style.zIndex = 2000;
         img.style.pointerEvents = 'none';
@@ -468,7 +480,7 @@ if (!document.querySelector('#flying-money-style')) {
             will-change: transform, opacity;
             filter: drop-shadow(0 0 8px #ffd700);
             transition: opacity 0.3s;
-            width: 120px !important;
+            width: 160px !important;
             height: auto !important;
         }
     `;
