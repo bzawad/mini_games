@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Secret of the Money Kingdom</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Start Screen -->
+    <div id="startScreen" class="screen active">
+        <div class="title-area">
+            <h1 class="game-title">The Secret of the Money Kingdom</h1>
+            <p class="subtitle">A spooky and silly point-and-click adventure</p>
+        </div>
+        <div class="story-intro">
+            <p>You are the chosen one—an adventurer on a noble quest.</p>
+            <p>Long ago, an old man whispered with his final breath:</p>
+            <p class="quote">"I know where the Secret Money Kingdom is…"</p>
+            <p>After two days and six hours of perilous travel, you finally stumble upon the legendary land...</p>
+        </div>
+        <div class="start-buttons">
+            <button id="startGameBtn" class="game-button">Begin Your Quest</button>
+            <button id="instructionsBtn" class="game-button">Instructions</button>
+        </div>
+    </div>
+
+    <!-- Instructions Screen -->
+    <div id="instructionsScreen" class="screen">
+        <div class="instructions-content">
+            <h2>How to Play</h2>
+            <div class="instructions-text">
+                <p><strong>Objective:</strong> Craft the Secret Potion of Healing to save the Money King!</p>
+                <p><strong>You need to find:</strong></p>
+                <ul>
+                    <li>🌸 One Pink Flower</li>
+                    <li>🐰 Three Green Bunnies</li>
+                    <li>👕 One Extra-Large T-Shirt (with a yellow star)</li>
+                </ul>
+                <p><strong>Gameplay:</strong></p>
+                <ul>
+                    <li>Click to explore and collect hidden items</li>
+                    <li>Solve environmental puzzles to unlock new areas</li>
+                    <li>Beware of clicking the Money Guy at the wrong time…</li>
+                </ul>
+                <p><strong>Three Phases:</strong></p>
+                <ul>
+                    <li><strong>Phase One:</strong> Everything seems normal… until you click something odd</li>
+                    <li><strong>Phase Two:</strong> The ground collapses! Everything's rearranged and glitched</li>
+                    <li><strong>Phase Three:</strong> The final twisted version - darker and creepier</li>
+                </ul>
+            </div>
+            <button id="backToStartBtn" class="game-button">Back to Start</button>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="screen">
+        <div class="game-header">
+            <div class="game-stats">
+                <div class="stat">Phase: <span id="currentPhase">1</span></div>
+                <div class="stat">Items Found: <span id="itemsFound">0</span>/5</div>
+                <div class="stat">Pink Flowers: <span id="flowerCount">0</span>/1</div>
+                <div class="stat">Green Bunnies: <span id="bunnyCount">0</span>/3</div>
+                <div class="stat">T-Shirts: <span id="tshirtCount">0</span>/1</div>
+            </div>
+            <button id="pauseBtn" class="game-button small">Pause</button>
+        </div>
+
+        <div id="gameArea" class="game-area">
+            <!-- Game content will be dynamically generated -->
+        </div>
+
+        <div class="inventory">
+            <h3>Inventory:</h3>
+            <div id="inventoryItems" class="inventory-items">
+                <!-- Inventory items will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase Transition Screen -->
+    <div id="phaseTransitionScreen" class="screen overlay">
+        <div class="transition-content">
+            <h2 id="transitionTitle">Phase Complete!</h2>
+            <p id="transitionMessage">The ground begins to shake...</p>
+            <div class="transition-progress">
+                <div id="transitionBar" class="progress-bar"></div>
+            </div>
+            <button id="continuePhaseBtn" class="game-button" style="margin-top:2rem;">Continue</button>
+        </div>
+    </div>
+
+    <!-- Jumpscare Screen -->
+    <div id="jumpscareScreen" class="screen overlay">
+        <div class="jumpscare-content">
+            <img id="scaryMoneyFace" src="images/money_king_scary.png" alt="Scary Money Face" class="jumpscare-image">
+            <div class="jumpscare-text">💀 JUMPSCARE! 💀</div>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="screen">
+        <div class="game-over-content">
+            <h2>Quest Complete!</h2>
+            <div class="final-stats">
+                <div class="stat-large">Items Collected: <span id="finalItems">0</span>/5</div>
+                <div class="stat-large">Phases Survived: <span id="finalPhases">1</span>/3</div>
+                <div id="newHighScore" class="new-high-score hidden">NEW RECORD!</div>
+            </div>
+            <div class="game-over-buttons">
+                <button id="playAgainBtn" class="game-button">Play Again</button>
+                <button id="backToMenuBtn" class="game-button">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pause Screen -->
+    <div id="pauseScreen" class="screen overlay">
+        <div class="pause-content">
+            <h2>Game Paused</h2>
+            <div class="pause-buttons">
+                <button id="resumeBtn" class="game-button">Resume</button>
+                <button id="quitToMenuBtn" class="game-button">Quit to Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <audio id="backgroundMusic" src="music.mp3" preload="auto" loop></audio>
+    <audio id="scareSound" src="scare.mp3" preload="auto"></audio>
+    <script src="script.js"></script>
+</body>
+
+</html>

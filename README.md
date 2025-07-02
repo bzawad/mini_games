@@ -84,6 +84,38 @@ A delightful memory card game featuring popular cat memes! Flip cards to find ma
 - 🖤 Vader Cat
 - 🤪 Weird Cat
 
+### 💰 The Secret of the Money Kingdom
+
+A spooky and silly point-and-click adventure game where things are never quite what they seem! Embark on a noble quest to craft the Secret Potion of Healing.
+
+**Features:**
+- 🎯 **Point-and-Click Adventure**: Explore the mysterious Money Kingdom through three distinct phases
+- 🧩 **Item Collection**: Find mystical items scattered across the strange land
+- 😱 **Three Horror Phases**: Experience escalating spookiness as you progress
+- 💀 **Jumpscare Elements**: Beware of the Money Guy and his unsettling surprises
+- 🎨 **Atmospheric Design**: Dark, mysterious visuals with golden accents
+- 📦 **Inventory System**: Track your collected items and progress
+
+**How to Play:**
+1. Navigate to the `money_kingdom` folder and open `index.html` in your browser
+2. Click to explore and collect hidden items: Pink Flower, Green Bunnies, and T-Shirt
+3. Solve environmental puzzles to unlock new areas
+4. Beware of clicking the Money Guy at the wrong time...
+5. Progress through three phases, each more unsettling than the last
+
+**The Quest:**
+*"You are the chosen one—an adventurer on a noble quest. Long ago, an old man whispered with his final breath: 'I know where the Secret Money Kingdom is…' Now, after two days and six hours of perilous travel, you finally stumble upon the legendary land... only to discover that something's not right."*
+
+**Items to Collect:**
+- 🌸 One Pink Flower
+- 🐰 Three Green Bunnies  
+- 👕 One Extra-Large T-Shirt (with a yellow star)
+
+**Three Phases of Horror:**
+- **Phase One**: Everything seems normal… until you click something odd
+- **Phase Two**: The ground collapses! Everything's rearranged and glitched
+- **Phase Three**: The final twisted version - darker, glitchier, and creepier
+
 ## 🚀 Getting Started
 
 Each game is self-contained in its own directory with all necessary files:
@@ -106,6 +138,11 @@ Each game is self-contained in its own directory with all necessary files:
 mini_games/
 ├── meme_cat_matching/          # Cat meme memory card game
 │   ├── images/                 # Cat meme images
+│   ├── index.html             # Game HTML
+│   ├── script.js              # Game logic
+│   └── styles.css             # Game styling
+├── money_kingdom/              # Point-and-click horror adventure
+│   ├── images/                 # Game assets and characters
 │   ├── index.html             # Game HTML
 │   ├── script.js              # Game logic
 │   └── styles.css             # Game styling

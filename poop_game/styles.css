@@ -306,6 +306,16 @@ body {
     #gameCanvas {
         width: 100%;
         height: auto;
+        max-width: 100vw;
+        max-height: 50vh;
+        object-fit: contain;
+        border: 5px solid #8B4513;
+        background: linear-gradient(to bottom, #87CEEB, #98FB98);
+        display: block;
+        margin: 0 auto;
+        image-rendering: pixelated;
+        image-rendering: -moz-crisp-edges;
+        image-rendering: crisp-edges;
     }
 
     #gameUI {
